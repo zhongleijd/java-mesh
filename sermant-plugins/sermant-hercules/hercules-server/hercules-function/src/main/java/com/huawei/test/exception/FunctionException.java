@@ -14,25 +14,31 @@
  * limitations under the License.
  */
 
-package com.huawei.test.asserts;
-
-import java.util.regex.Pattern;
+package com.huawei.test.exception;
 
 /**
- * 功能描述：正则表达式校验器
+ * 功能描述：函数执行异常时，抛出运行时异常
  *
  * @author zl
- * @since 2021-12-09
+ * @since 2021-12-13
  */
-public class RegularAssert {
-	/**
-	 * 判断给定的内容是否与正则表达式匹配，使用java.util.regex.Pattern实现
-	 *
-	 * @param content 内容
-	 * @param regularExpression 正则表达式
-	 * @return true：内容匹配，false:内容不匹配
-	 */
-	public static boolean assertRegular(String content, String regularExpression) {
-		return Pattern.matches(regularExpression, content);
+public class FunctionException extends RuntimeException {
+	public FunctionException() {
+	}
+
+	public FunctionException(String message) {
+		super(message);
+	}
+
+	public FunctionException(String message, Throwable cause) {
+		super(message, cause);
+	}
+
+	public FunctionException(Throwable cause) {
+		super(cause);
+	}
+
+	public FunctionException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+		super(message, cause, enableSuppression, writableStackTrace);
 	}
 }
