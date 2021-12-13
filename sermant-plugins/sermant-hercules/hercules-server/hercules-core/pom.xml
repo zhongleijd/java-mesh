@@ -13,6 +13,7 @@
 	<properties>
 		<outputfilename>${project.version}.jar</outputfilename>
 		<ngrinder.version>3.4.2</ngrinder.version>
+		<hercules.function>0.0.1</hercules.function>
 	</properties>
 
 	<dependencies>
@@ -197,6 +198,11 @@
 			<groupId>com.alibaba</groupId>
 			<artifactId>fastjson</artifactId>
 			<version>1.2.47</version>
+		</dependency>
+		<dependency>
+			<groupId>com.huawei.hercules</groupId>
+			<artifactId>hercules-function</artifactId>
+			<version>${hercules.function}</version>
 		</dependency>
     </dependencies>
 	<build>
