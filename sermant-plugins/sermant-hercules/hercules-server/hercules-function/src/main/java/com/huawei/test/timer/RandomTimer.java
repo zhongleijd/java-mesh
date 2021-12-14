@@ -16,6 +16,9 @@
 
 package com.huawei.test.timer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -24,15 +27,29 @@ import java.util.concurrent.TimeUnit;
  * @author zl
  * @since 2021-12-09
  */
-public class RandomTimer{
+public class RandomTimer {
+	/**
+	 * 日志
+	 */
+	private static final Logger LOGGER = LoggerFactory.getLogger(RandomTimer.class);
+
 	/**
 	 * 随机停止指定单位的时间长度，但是取值是从start-end之间
 	 *
-	 * @param start 停止时间计算时开始时间
-	 * @param end 停止时间计算时结束时间
+	 * @param start    停止时间计算时开始时间
+	 * @param end      停止时间计算时结束时间
 	 * @param timeUnit 时间单位
 	 */
 	public static void delay(long start, long end, TimeUnit timeUnit) {
-
+		if (start <= 0 || end <= 0) {
+			return;
+		}
+		if (end <= start) {
+			return;
+		}
+		double randomValue = Math.random();
+		long timeZone = end - start;
+		long randomTimeValue = (long) (timeZone * randomValue);
+		ConstantTimer.delay(start + randomTimeValue, timeUnit);
 	}
 }
