@@ -17,6 +17,8 @@
 package com.huawei.test.preprocessor.impl;
 
 import com.huawei.test.preprocessor.URLModifier;
+import com.huawei.test.preprocessor.config.HttpURLModifierConfig;
+import org.apache.commons.lang.StringUtils;
 
 /**
  * 功能描述：HTTP URL session id 配置修改
@@ -24,14 +26,18 @@ import com.huawei.test.preprocessor.URLModifier;
  * @author zl
  * @since 2021-12-09
  */
-public class HttpURLModifier extends URLModifier {
+public class HttpURLModifier extends URLModifier<HttpURLModifierConfig> {
 	@Override
-	public void initConfig(Object config) {
-
-	}
-
-	@Override
-	public String modifyUrl(String url, String sessionHeader) {
+	public String modifyUrl(String url, String sessionHeader, HttpURLModifierConfig config) {
+		if (StringUtils.isEmpty(url)) {
+			return "";
+		}
+		if (StringUtils.isEmpty(sessionHeader)) {
+			return "";
+		}
+		if (config == null) {
+			return "";
+		}
 		return null;
 	}
 }
