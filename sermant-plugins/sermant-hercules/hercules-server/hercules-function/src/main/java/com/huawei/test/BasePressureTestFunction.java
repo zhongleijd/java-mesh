@@ -14,21 +14,40 @@
  * limitations under the License.
  */
 
-package com.huawei.test.preprocessor;
-
-import com.huawei.test.BasePressureTestFunction;
+package com.huawei.test;
 
 /**
- * 功能描述：初始化URL修改器
+ * 功能描述：压测函数基类
  *
  * @author zl
- * @since 2021-12-09
+ * @since 2021-12-14
  */
-public abstract class URLModifier<T> extends BasePressureTestFunction {
+public class BasePressureTestFunction implements PressureTestFunction{
 	/**
-	 * 修改url
-	 *
-	 * @return 修改之后的url
+	 * 函数名称
 	 */
-	public abstract String modifyUrl(String url, String sessionHeader, T config);
+	private String functionName;
+
+	/**
+	 * 函数说明
+	 */
+	private String comments;
+
+	@Override
+	public void defineFunctionName(String name) {
+		this.functionName = name;
+	}
+
+	@Override
+	public void addComments(String comments) {
+		this.comments = comments;
+	}
+
+	public String getFunctionName() {
+		return functionName;
+	}
+
+	public String getComments() {
+		return comments;
+	}
 }
