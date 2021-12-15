@@ -16,6 +16,7 @@
 
 package com.huawei.test.timer;
 
+import com.huawei.test.exception.FunctionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,15 +42,26 @@ public class RandomTimer {
 	 * @param timeUnit 时间单位
 	 */
 	public static void delay(long start, long end, TimeUnit timeUnit) {
+		ConstantTimer.delay(randomTimestamp(start, end), timeUnit);
+	}
+
+	/**
+	 * start和end之间的随机timestamp
+	 *
+	 * @param start 开始timestamp
+	 * @param end   结束timestamp
+	 * @return start和end之间的随机timestamp
+	 */
+	public static long randomTimestamp(long start, long end) {
 		if (start <= 0 || end <= 0) {
-			return;
+			throw new FunctionException("End time and start time must great than 0.");
 		}
 		if (end <= start) {
-			return;
+			throw new FunctionException("End time must great than start time.");
 		}
 		double randomValue = Math.random();
 		long timeZone = end - start;
 		long randomTimeValue = (long) (timeZone * randomValue);
-		ConstantTimer.delay(start + randomTimeValue, timeUnit);
+		return start + randomTimeValue;
 	}
 }

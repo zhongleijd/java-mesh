@@ -20,6 +20,9 @@ import com.huawei.test.preprocessor.URLModifier;
 import com.huawei.test.preprocessor.config.HttpURLModifierConfig;
 import org.apache.commons.lang.StringUtils;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * 功能描述：HTTP URL session id 配置修改
  *
@@ -27,17 +30,33 @@ import org.apache.commons.lang.StringUtils;
  * @since 2021-12-09
  */
 public class HttpURLModifier extends URLModifier<HttpURLModifierConfig> {
+	/**
+	 * 全局缓存sessionId,根据线程名称来保存
+	 */
+	private static final Map<String, String> cacheSessionIds = new ConcurrentHashMap<>();
+
 	@Override
-	public String modifyUrl(String url, String sessionHeader, HttpURLModifierConfig config) {
+	public String modifyUrl(String url, String sessionId, HttpURLModifierConfig config) {
 		if (StringUtils.isEmpty(url)) {
-			return "";
+			return url;
 		}
-		if (StringUtils.isEmpty(sessionHeader)) {
-			return "";
+		String threadName = Thread.currentThread().getName();
+		if (StringUtils.isEmpty(sessionId) && !cacheSessionIds.containsKey(threadName)) {
+			return url;
 		}
+		cacheSessionIds.put(threadName, sessionId);
 		if (config == null) {
-			return "";
+			return url;
 		}
-		return null;
+		String[] urlPartitions = url.split("\\?");
+		StringBuilder urlBuilder = new StringBuilder();
+		urlBuilder.append(urlPartitions[0]);
+		if (config.useSemicolonSeparator()) {
+			urlBuilder.append(";").append(config.getSessionArgumentName()).append("=").append(sessionId);
+		}
+		if(urlPartitions.length > 1) {
+			urlBuilder.append("?").append(urlPartitions[1]);
+		}
+		return urlBuilder.toString();
 	}
 }
