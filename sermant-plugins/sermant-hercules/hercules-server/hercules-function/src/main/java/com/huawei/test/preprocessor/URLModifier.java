@@ -30,5 +30,5 @@ public abstract class URLModifier<T> extends BasePressureTestFunction {
 	 *
 	 * @return 修改之后的url
 	 */
-	public abstract String modifyUrl(String url, String sessionHeader, T config);
+	public abstract String modifyUrl(String url, String sessionId, T config);
 }
