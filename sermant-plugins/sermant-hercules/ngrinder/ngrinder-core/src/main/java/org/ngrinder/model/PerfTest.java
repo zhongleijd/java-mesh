@@ -26,10 +26,12 @@ import org.ngrinder.common.util.PathUtils;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
+import javax.persistence.ConstraintMode;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.FetchType;
+import javax.persistence.ForeignKey;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
@@ -336,7 +338,7 @@ public class PerfTest extends BaseModel<PerfTest> {
 	private Set<MonitoringHost> monitoringHosts = new HashSet<>();
 
 	@OneToOne(targetEntity = PerfScene.class)
-	@JoinColumn(name = "scene_id", referencedColumnName = "id")
+	@JoinColumn(name = "scene_id", referencedColumnName = "id", foreignKey = @ForeignKey(name="none", value= ConstraintMode.NO_CONSTRAINT))
 	private PerfScene perfScene;
 
 	@Expose
