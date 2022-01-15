@@ -16,6 +16,7 @@
 
 package com.huawei.hercules.service.agent;
 
+import com.alibaba.fastjson.JSONObject;
 import com.huawei.hercules.config.FeignRequestInterceptor;
 import com.huawei.hercules.fallback.AgentDownLoadServiceFallbackFactory;
 import feign.Response;
@@ -62,6 +63,6 @@ public interface IAgentDownloadService {
      * @param region  agent region
      */
     @RequestMapping(value = "/download")
-    String download(@RequestParam(value = "owner", required = false) String owner,
-                    @RequestParam(value = "region", required = false) String region);
+    JSONObject download(@RequestParam(value = "owner", required = false) String owner,
+                        @RequestParam(value = "region", required = false) String region);
 }

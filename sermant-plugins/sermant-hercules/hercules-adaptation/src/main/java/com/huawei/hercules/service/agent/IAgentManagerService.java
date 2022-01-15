@@ -93,7 +93,7 @@ public interface IAgentManagerService {
      */
 
     @RequestMapping("/api/{id}/state")
-    HttpEntity<String> getState(@PathVariable Long id, @RequestParam String ip, @RequestParam String name);
+    HttpEntity<JSONObject> getState(@PathVariable Long id, @RequestParam String ip, @RequestParam String name);
 
     /**
      * Get the current all agents state.

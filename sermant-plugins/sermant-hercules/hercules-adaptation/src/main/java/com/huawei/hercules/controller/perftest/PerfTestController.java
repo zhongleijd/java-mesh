@@ -218,7 +218,8 @@ public class PerfTestController extends BaseController {
         oneResponseTask.put(TEST_ID.getShowKey(), task.get(TEST_ID.getServerKey()));
         oneResponseTask.put(SCRIPT_PATH.getShowKey(), task.get(SCRIPT_PATH.getServerKey()));
         Map<String, Object> createdUser = task.getJSONObject("createdUser");
-        oneResponseTask.put(OWNER.getShowKey(), createdUser.get(OWNER.getServerKey()));
+        Object value = createdUser == null ? "" : createdUser.get(OWNER.getServerKey());
+        oneResponseTask.put(OWNER.getShowKey(), value);
         oneResponseTask.put(DURATION.getShowKey(), getDurationTime(task.getString(DURATION.getServerKey())));
         if ("R".equalsIgnoreCase(task.getString("threshold"))) {
             oneResponseTask.put(DURATION.getShowKey(), task.get("runCount"));
@@ -233,8 +234,7 @@ public class PerfTestController extends BaseController {
         oneResponseTask.put(MONITORING_HOST.getShowKey(), task.get(MONITORING_HOST.getServerKey()));
 
         // 格式化日期格式
-        oneResponseTask.put(START_TIME.getShowKey(), dateFormat(task.getString(START_TIME.getServerKey()),
-                TimeUnit.MILLISECONDS));
+        oneResponseTask.put(START_TIME.getShowKey(), task.getString(START_TIME.getServerKey()));
         return oneResponseTask;
     }
 
@@ -458,12 +458,11 @@ public class PerfTestController extends BaseController {
     public JSONObject getAllChart(@RequestParam("test_id") Integer testId) {
         String dataType = "TPS,Errors,Mean_Test_Time_(ms),Mean_time_to_first_byte,User_defined,Vuser";
 
-        HttpEntity<String> reports = perfTestService.getPerfGraphById(testId, dataType, false, IMG_WIDTH);
+        HttpEntity<JSONObject> reports = perfTestService.getPerfGraphById(testId, dataType, false, IMG_WIDTH);
         if (reports == null) {
             throw new HerculesException("Report data don't found, please confirm the task status.");
         }
-        String body = reports.getBody();
-        JSONObject perfGraphData = JSONObject.parseObject(body);
+        JSONObject perfGraphData = reports.getBody();
         if (perfGraphData == null || perfGraphData.isEmpty()) {
             throw new HerculesException("Report data don't found, please confirm the task status.");
         }
@@ -621,9 +620,8 @@ public class PerfTestController extends BaseController {
     }
 
     private JSONObject refreshTestRunningById(long id) {
-        HttpEntity<String> stringHttpEntity = perfTestService.refreshTestRunningById(id);
-        String body = stringHttpEntity.getBody();
-        JSONObject report = JSONObject.parseObject(body);
+        HttpEntity<JSONObject> stringHttpEntity = perfTestService.refreshTestRunningById(id);
+        JSONObject report = stringHttpEntity.getBody();
         JSONObject runningReport = new JSONObject();
 
         JSONObject test = report.getJSONObject("test");

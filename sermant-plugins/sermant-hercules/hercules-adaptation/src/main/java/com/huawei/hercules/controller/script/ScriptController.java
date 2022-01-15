@@ -232,7 +232,7 @@ public class ScriptController extends BaseController {
                     oneFile.put("size", null);
                 }
                 oneFile.put("commit", description);
-                oneFile.put("update_time", longToDate((Long) oneFile.get("lastModifiedDate")));
+                oneFile.put("update_time", longToDate(oneFile.getLong("lastModifiedDate")));
             }
 
             // 统计处理之后满足条件的文件数量
@@ -274,13 +274,13 @@ public class ScriptController extends BaseController {
     @RequestMapping(value = "/script/search", method = RequestMethod.GET)
     public JSONObject searchScripts(@RequestParam(required = false) String value) {
         JSONObject scripts = new JSONObject();
-        HttpEntity<String> allScripts = perfTestService.getScripts("");
-        String body = allScripts.getBody();
-        List<Map<String, Object>> allPaths = JSONObject.parseObject(body, List.class);
+        HttpEntity<JSONArray> allScripts = perfTestService.getScripts("");
+        JSONArray body = allScripts.getBody();
         List<String> paths = new ArrayList<>();
-        if (allPaths != null && !allPaths.isEmpty()) {
-            for (Map<String, Object> row : allPaths) {
-                String path = row.get("path").toString();
+        if (body != null && !body.isEmpty()) {
+            for (int i = 0; i < body.size(); i++) {
+                JSONObject eachData = body.getJSONObject(i);
+                String path = eachData.getString("path");
                 if (StringUtils.isEmpty(value) || path.contains(value)) {
                     paths.add(path);
                 }
@@ -516,8 +516,8 @@ public class ScriptController extends BaseController {
             file.remove("content");
 
             // 查询资源文件
-            HttpEntity<String> resources = perfTestService.getResources(path, "");
-            JSONObject body = JSONObject.parseObject(resources.getBody());
+            HttpEntity<JSONObject> resources = perfTestService.getResources(path, "");
+            JSONObject body = resources.getBody();
             file.put("script_resource", body.get("resources"));
             file.put("targetHosts", body.get("targetHosts"));
         }
@@ -537,8 +537,8 @@ public class ScriptController extends BaseController {
         JSONObject result = new JSONObject();
         List<Map<String, Object>> targetHosts = new LinkedList<>();
         // 查询资源文件
-        HttpEntity<String> resources = perfTestService.getResources(path, "");
-        JSONObject body = JSONObject.parseObject(resources.getBody());
+        HttpEntity<JSONObject> resources = perfTestService.getResources(path, "");
+        JSONObject body = resources.getBody();
         String hosts = body.getString("targetHosts");
         if (!StringUtils.isEmpty(hosts)) {
             String[] allHosts = hosts.split(",");
@@ -667,8 +667,8 @@ public class ScriptController extends BaseController {
         if (StringUtils.isEmpty(path)) {
             return "";
         }
-        HttpEntity<String> resources = perfTestService.getResources(path, "");
-        JSONObject body = JSONObject.parseObject(resources.getBody());
+        HttpEntity<JSONObject> resources = perfTestService.getResources(path, "");
+        JSONObject body = resources.getBody();
         return body.getString("targetHosts");
     }
 }
