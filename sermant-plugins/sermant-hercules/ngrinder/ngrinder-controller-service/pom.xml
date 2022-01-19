@@ -27,6 +27,12 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.logging.log4j</groupId>
+                    <artifactId>log4j-to-slf4j</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -49,7 +55,11 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context-support</artifactId>
-            <version>${spring.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>rome</groupId>
@@ -61,20 +71,6 @@
             <groupId>com.ibm.icu</groupId>
             <artifactId>icu4j</artifactId>
             <version>4.6</version>
-        </dependency>
-        <dependency>
-            <groupId>sonia.svnkit</groupId>
-            <artifactId>svnkit-dav</artifactId>
-            <version>1.8.4-scm1</version>
-            <scope>system</scope>
-            <systemPath>${basedir}/../lib/svnkit-dav-1.8.4-scm1.jar</systemPath>
-        </dependency>
-        <dependency>
-            <groupId>sonia.svnkit</groupId>
-            <artifactId>svnkit</artifactId>
-            <version>1.8.4-scm1</version>
-            <scope>system</scope>
-            <systemPath>${basedir}/../lib/svnkit-1.8.4-scm1.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>grinder</groupId>
@@ -124,7 +120,6 @@
             <groupId>junit</groupId>
             <artifactId>junit-dep</artifactId>
             <version>4.9</version>
-            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -156,6 +151,12 @@
             <groupId>org.reflections</groupId>
             <artifactId>reflections</artifactId>
             <version>0.9.8</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>javassist</groupId>
+                    <artifactId>javassist</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -190,71 +191,6 @@
             <artifactId>aether-connector-asynchttpclient</artifactId>
             <version>1.13.1</version>
         </dependency>
-
-        <!-- Spring Data -->
-        <dependency>
-            <groupId>org.springframework.data</groupId>
-            <artifactId>spring-data-jpa</artifactId>
-            <version>${spring.data.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.springframework</groupId>
-                    <artifactId>spring-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.springframework</groupId>
-                    <artifactId>spring-orm</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.springframework</groupId>
-                    <artifactId>spring-tx</artifactId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>spring-beans</artifactId>
-                    <groupId>org.springframework</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-            <version>8.0.21</version>
-        </dependency>
-        <!-- Spring dependencies -->
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-context</artifactId>
-            <version>${spring.version}</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>commons-logging</artifactId>
-                    <groupId>commons-logging</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-orm</artifactId>
-            <version>${spring.version}</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>spring-beans</artifactId>
-                    <groupId>org.springframework</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-webmvc</artifactId>
-            <version>${spring.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-test</artifactId>
-            <version>${spring.version}</version>
-            <scope>test</scope>
-        </dependency>
         <dependency>
             <groupId>org.hibernate.javax.persistence</groupId>
             <artifactId>hibernate-jpa-2.1-api</artifactId>
@@ -263,7 +199,6 @@
         <dependency>
             <groupId>org.hibernate</groupId>
             <artifactId>hibernate-entitymanager</artifactId>
-            <!--			<version>4.2.2.Final</version>-->
             <version>5.4.1.Final</version>
         </dependency>
         <dependency>
@@ -304,11 +239,6 @@
             <systemPath>${basedir}/../lib/universal-analytics-java-1.0.jar</systemPath>
         </dependency>
         <dependency>
-            <groupId>net.bytebuddy</groupId>
-            <artifactId>byte-buddy</artifactId>
-            <version>1.10.15</version>
-        </dependency>
-        <dependency>
             <groupId>commons-httpclient</groupId>
             <artifactId>commons-httpclient</artifactId>
             <version>3.1</version>
@@ -346,7 +276,7 @@
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
-            <version>2.2</version>
+            <version>2.6.2</version>
         </dependency>
 
         <dependency>
@@ -365,6 +295,16 @@
             <groupId>ro.fortsoft.pf4j</groupId>
             <artifactId>pf4j</artifactId>
             <version>0.12.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>log4j</groupId>
+                    <artifactId>log4j</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-log4j12</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -388,21 +328,42 @@
             <artifactId>commons-collections</artifactId>
             <version>3.2.1</version>
         </dependency>
-
         <dependency>
             <groupId>com.navercorp.lucy</groupId>
             <artifactId>lucy-xss-servlet</artifactId>
             <version>2.0.0</version>
         </dependency>
         <dependency>
+            <groupId>net.bytebuddy</groupId>
+            <artifactId>byte-buddy</artifactId>
+            <version>1.10.15</version>
+        </dependency>
+        <dependency>
+            <groupId>org.codehaus.groovy</groupId>
+            <artifactId>groovy-all</artifactId>
+            <version>2.2.1</version>
+        </dependency>
+
+        <!--org.javassist:javassist:jar:3.21.0-GA-->
+        <dependency>
+            <groupId>org.javassist</groupId>
+            <artifactId>javassist</artifactId>
+            <version>3.21.0-GA</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>2.10.1</version>
+        </dependency>
+        <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.9.7</version>
+            <version>2.10.1</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
-            <version>2.9.7</version>
+            <version>2.13.0</version>
         </dependency>
         <dependency>
             <groupId>com.google.code.findbugs</groupId>
@@ -459,7 +420,11 @@
             <artifactId>commons-cli</artifactId>
             <version>1.0</version>
         </dependency>
-
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+            <version>3.11.4</version>
+        </dependency>
         <!-- https://mvnrepository.com/artifact/de.regnis.q.sequence/sequence-library -->
         <dependency>
             <groupId>de.regnis.q.sequence</groupId>
@@ -478,8 +443,8 @@
         <dependencies>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-parent</artifactId>
-                <version>1.5.19.RELEASE</version>
+                <artifactId>spring-boot-starter-parent</artifactId>
+                <version>2.3.12.RELEASE</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -501,12 +466,6 @@
                     <include>**/script_template/**/*</include>
                 </includes>
             </resource>
-            <resource>
-                <directory>src/main/webapp/</directory>
-                <excludes>
-                    <exclude>resources/node_modules/**</exclude>
-                </excludes>
-            </resource>
         </resources>
         <plugins>
             <plugin>
@@ -521,7 +480,7 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>1.5.19.RELEASE</version>
+                <version>2.3.12.RELEASE</version>
                 <configuration>
                     <includeSystemScope>true</includeSystemScope>
                 </configuration>

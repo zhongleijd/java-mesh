@@ -19,7 +19,19 @@ import org.apache.commons.lang.StringUtils;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Type;
 
-import javax.persistence.*;
+import javax.persistence.Cacheable;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
+import javax.persistence.PrePersist;
+import javax.persistence.PreUpdate;
+import javax.persistence.Table;
+import javax.persistence.Transient;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,33 +51,35 @@ public class User extends BaseModel<User> {
 
 	private static final long serialVersionUID = 7398072895183814285L;
 
-	@Expose
-	@Column(name = "user_id", unique = true, nullable = false)
-	/** User Id */
-	private String userId;
+    @Expose
+    @Column(name = "user_id", unique = true, nullable = false)
+    /** User Id */
+    private String userId;
 
-	@Expose
-	@Column(name = "user_name")
-	/** User Name e.g) Jone Dogh. */
-	private String userName;
+    @Expose
+    @Column(name = "user_name")
+    /** User Name e.g) Jone Dogh. */
+    private String userName;
 
-	@Expose(serialize = false)
-	private String password;
+    @Expose(serialize = false)
+    @JsonIgnore
+    private String password;
 
-	@Expose
-	@Type(type = "true_false")
-	@Column(columnDefinition = "char(1)")
-	private Boolean enabled;
+    @Expose
+    @Type(type = "true_false")
+    @Column(columnDefinition = "char(1)")
+    @JsonIgnore
+    private Boolean enabled;
 
-	@Expose
-	private String email;
+    @Expose
+    private String email;
 
-	@Expose
-	@Enumerated(EnumType.STRING)
-	@Column(name = "role_name", nullable = false)
-	private Role role;
+    @Expose
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role_name", nullable = false)
+    private Role role;
 
-	@Expose
+    @Expose
 	private String description;
 
 	@Expose
@@ -77,35 +91,38 @@ public class User extends BaseModel<User> {
 
 	@Expose
 	@Column(name = "mobile_phone")
-	private String mobilePhone;
+    private String mobilePhone;
 
-	@Column(name = "is_external", columnDefinition = "char(1)")
-	@Type(type = "true_false")
-	private Boolean external;
+    @Column(name = "is_external", columnDefinition = "char(1)")
+    @Type(type = "true_false")
+    private Boolean external;
 
-	@Column(name = "authentication_provider_class")
-	/** Who provide the authentication */
-	private String authProviderClass;
+    @Column(name = "authentication_provider_class")
+    /** Who provide the authentication */
+    private String authProviderClass;
 
-	@Transient
-	private User follower;
+    @Transient
+    @JsonIgnore
+    private User follower;
 
-	@Expose
-	@Transient
-	private String followersStr;
+    @Expose
+    @Transient
+    @JsonIgnore
+    private String followersStr;
 
-	@Transient
-	private User ownerUser;
+    @Transient
+    @JsonIgnore
+    private User ownerUser;
 
-	@ManyToMany(targetEntity = User.class, fetch = FetchType.EAGER)
-	@JoinTable(name = "SHARED_USER", joinColumns = @JoinColumn(name = "owner_id", referencedColumnName = "id"), // LF
-		inverseJoinColumns = @JoinColumn(name = "follow_id", referencedColumnName = "id"))
-	private List<User> followers = new ArrayList<>();
+    @ManyToMany(targetEntity = User.class, fetch = FetchType.EAGER)
+    @JoinTable(name = "SHARED_USER", joinColumns = @JoinColumn(name = "owner_id", referencedColumnName = "id"), // LF
+        inverseJoinColumns = @JoinColumn(name = "follow_id", referencedColumnName = "id"))
+    private List<User> followers = new ArrayList<>();
 
-	@ManyToMany(targetEntity = User.class, fetch = FetchType.EAGER)
-	@JoinTable(name = "SHARED_USER", joinColumns = @JoinColumn(name = "follow_id", referencedColumnName = "id"), // LF
-		inverseJoinColumns = @JoinColumn(name = "owner_id", referencedColumnName = "id"))
-	private List<User> owners = new ArrayList<>();
+    @ManyToMany(targetEntity = User.class, fetch = FetchType.EAGER)
+    @JoinTable(name = "SHARED_USER", joinColumns = @JoinColumn(name = "follow_id", referencedColumnName = "id"), // LF
+        inverseJoinColumns = @JoinColumn(name = "owner_id", referencedColumnName = "id"))
+    private List<User> owners = new ArrayList<>();
 
 	/**
 	 * Default constructor.
