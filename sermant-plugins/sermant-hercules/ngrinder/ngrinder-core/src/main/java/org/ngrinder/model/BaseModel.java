@@ -1,4 +1,4 @@
-/* 
+/*
  * Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
@@ -9,12 +9,17 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
- * limitations under the License. 
+ * limitations under the License.
  */
 package org.ngrinder.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.google.gson.annotations.Expose;
-import org.hibernate.annotations.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.Index;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.Column;
 import javax.persistence.JoinColumn;
@@ -24,7 +29,7 @@ import java.util.Date;
 
 /**
  * Base Model which has following attribute.
- * 
+ *
  * @param <M> wrapped entity
  * @author Liu Zhifei
  * @author JunHo Yoon
@@ -33,33 +38,35 @@ import java.util.Date;
 @MappedSuperclass
 public class BaseModel<M> extends BaseEntity<M> {
 
-	private static final long serialVersionUID = -3876339828833595694L;
+    private static final long serialVersionUID = -3876339828833595694L;
 
-	@Expose
-	@Column(name = "created_date")
-	@CreationTimestamp
-	private Date createdDate;
+    @Expose
+    @Column(name = "created_date")
+    @CreationTimestamp
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private Date createdDate;
 
-	@ManyToOne
-	@JoinColumn(name = "created_user", insertable = true, updatable = false)
-	@Index(name = "created_user_index")
-	@NotFound(action = NotFoundAction.IGNORE)
-	private User createdUser;
+    @ManyToOne
+    @JoinColumn(name = "created_user", insertable = true, updatable = false)
+    @Index(name = "created_user_index")
+    @NotFound(action = NotFoundAction.IGNORE)
+    private User createdUser;
 
-	@Expose
-	@Column(name = "last_modified_date", insertable = true, updatable = true)
-	@UpdateTimestamp
-	private Date lastModifiedDate;
+    @Expose
+    @Column(name = "last_modified_date", insertable = true, updatable = true)
+    @UpdateTimestamp
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private Date lastModifiedDate;
 
-	@ManyToOne
-	@JoinColumn(name = "last_modified_user", insertable = true, updatable = true)
-	@Index(name = "last_modified_user_index")
-	@NotFound(action = NotFoundAction.IGNORE)
-	private User lastModifiedUser;
+    @ManyToOne
+    @JoinColumn(name = "last_modified_user", insertable = true, updatable = true)
+    @Index(name = "last_modified_user_index")
+    @NotFound(action = NotFoundAction.IGNORE)
+    private User lastModifiedUser;
 
-	public Date getCreatedDate() {
-		return createdDate;
-	}
+    public Date getCreatedDate() {
+        return createdDate;
+    }
 
 	public void setCreatedDate(Date createdDate) {
 		this.createdDate = createdDate;

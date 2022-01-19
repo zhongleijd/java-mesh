@@ -13,6 +13,7 @@
  */
 package org.ngrinder.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.google.gson.annotations.Expose;
 import net.grinder.common.GrinderProperties;
 import org.apache.commons.lang.StringUtils;
@@ -34,7 +35,6 @@ import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
 import javax.persistence.PrePersist;
 import javax.persistence.PreUpdate;
 import javax.persistence.Table;
@@ -93,43 +93,41 @@ public class PerfTest extends BaseModel<PerfTest> {
 	@Column(length = MAX_LONG_STRING_SIZE)
 	private String description;
 
-	@Expose
-	@Enumerated(EnumType.STRING)
-	@Column(name = "status")
-	private Status status;
+    @Expose
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private Status status;
 
-	@Expose
-	@Cloneable
-	/** ignoreSampleCount value, default to 0. */
-	@Column(name = "ignore_sample_count")
-	private Integer ignoreSampleCount;
+    @Expose
+    @Cloneable
+    @Column(name = "ignore_sample_count")
+    private Integer ignoreSampleCount;
 
-	@Expose
-	/** the scheduled time of this test. */
-	@Column(name = "scheduled_time")
-	@Index(name = "scheduled_time_index")
-	private Date scheduledTime;
+    @Expose
+    @Column(name = "scheduled_time")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    @Index(name = "scheduled_time_index")
+    private Date scheduledTime;
 
-	@Expose
-	/** the start time of this test. */
-	@Column(name = "start_time")
-	private Date startTime;
+    @Expose
+    @Column(name = "start_time")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private Date startTime;
 
-	@Expose
-	/** the finish time of this test. */
-	@Column(name = "finish_time")
-	private Date finishTime;
+    @Expose
+    @Column(name = "finish_time")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private Date finishTime;
 
-	/**
-	 * the target host to test.
-	 */
-	@Expose
-	@Cloneable
-//	@Column(name = "target_hosts")
-	@Column(name = "target_hosts", length = 65535)
-	private String targetHosts;
+    /**
+     * the target host to test.
+     */
+    @Expose
+    @Cloneable
+    @Column(name = "target_hosts", length = 65535)
+    private String targetHosts;
 
-	/**
+    /**
 	 * The send mail code.
 	 */
 	@Expose
@@ -335,8 +333,6 @@ public class PerfTest extends BaseModel<PerfTest> {
 	@JoinColumn(name = "test_id", referencedColumnName = "id")
 	private Set<MonitoringHost> monitoringHosts = new HashSet<>();
 
-	@OneToOne(targetEntity = PerfScene.class)
-	@JoinColumn(name = "scene_id", referencedColumnName = "id")
 	private PerfScene perfScene;
 
 	@Expose
