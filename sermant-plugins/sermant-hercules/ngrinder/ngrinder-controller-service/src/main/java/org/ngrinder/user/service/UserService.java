@@ -21,7 +21,7 @@ import org.ngrinder.model.PerfTest;
 import org.ngrinder.model.Role;
 import org.ngrinder.model.User;
 import org.ngrinder.perftest.service.PerfTestService;
-import org.ngrinder.script.service.FileEntryService;
+import org.ngrinder.script.service.NfsFileEntryService;
 import org.ngrinder.service.AbstractUserService;
 import org.ngrinder.user.repository.UserRepository;
 import org.ngrinder.user.repository.UserSpecification;
@@ -52,25 +52,25 @@ import java.util.List;
 @Service
 public class UserService extends AbstractUserService {
 
-	@Autowired
-	private UserRepository userRepository;
+    @Autowired
+    private UserRepository userRepository;
 
-	@SuppressWarnings("SpringJavaAutowiringInspection")
-	@Autowired
-	private PerfTestService perfTestService;
+    @SuppressWarnings("SpringJavaAutowiringInspection")
+    @Autowired
+    private PerfTestService perfTestService;
 
-	@Autowired
-	private FileEntryService scriptService;
+    @Autowired
+    private NfsFileEntryService fileEntryService;
 
-	@Autowired
-	private Config config;
+    @Autowired
+    private Config config;
 
-	@Autowired
-	private CacheManager cacheManager;
+    @Autowired
+    private CacheManager cacheManager;
 
-	private Cache userCache;
+    private Cache userCache;
 
-	private Cache userModelCache;
+    private Cache userModelCache;
 
 	@PostConstruct
 	public void init() {
@@ -169,8 +169,8 @@ public class UserService extends AbstractUserService {
 	}
 
 	private void prepareUserEnv(User user) {
-		scriptService.prepare(user);
-	}
+        fileEntryService.prepare(user);
+    }
 
 
 	private List<User> getFollowers(String followersStr) {
@@ -233,8 +233,8 @@ public class UserService extends AbstractUserService {
 	 * @return found user list
 	 */
 	public List<User> getAll(Role role) {
-		return getAll(role, new Sort(Direction.ASC, "userName"));
-	}
+        return getAll(role, Sort.by(Direction.ASC, "userName"));
+    }
 
 	/**
 	 * Get the users by nameLike spec.

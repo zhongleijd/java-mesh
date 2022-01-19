@@ -32,7 +32,11 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.List;
 
@@ -42,75 +46,48 @@ import static org.ngrinder.common.util.ObjectUtils.defaultIfNull;
 @Controller
 @RequestMapping("/perfreport")
 public class PerfTestReportController extends BaseController {
-
-	private static final String DEFAULT_PAGE = "1";
-	private static final String DEFAULT_PAGE_SIZE = "10";
-
-	@Autowired
-	private PerfTestReportService perfTestReportService;
+    @Autowired
+    private PerfTestReportService perfTestReportService;
 
 
-	@RequestMapping(value = {"", "/"}, method = RequestMethod.GET)
-	public @ResponseBody
-	Page<PerfTestReport> getBasicReport(User user,
-										@PageableDefault(page = 0, size = 10) Pageable pageable,
-										@RequestParam(required = false) String query) {
+    @RequestMapping(value = {"", "/"}, method = RequestMethod.GET)
+    public @ResponseBody
+    Page<PerfTestReport> getBasicReport(User user,
+                                        @PageableDefault(page = 0, size = 10) Pageable pageable,
+                                        @RequestParam(required = false) String query) {
 
-		pageable = new PageRequest(pageable.getPageNumber(), pageable.getPageSize(),
-			defaultIfNull(pageable.getSort(),
-				new Sort(Sort.Direction.DESC, "id")));
-		Page<PerfTestReport> BasicReportByUserId = perfTestReportService.getBasicReportByUserId(pageable, user,query);
-
-		//	Page<PerfTestReport> BasicReportPage = perfTestReportService.getApiBasicReport(pageable);
-		//return toJsonHttpEntity(basicReports);
-		return BasicReportByUserId;
-	}
+        pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
+            defaultIfNull(pageable.getSort(), Sort.by(Sort.Direction.DESC, "id")));
+        return perfTestReportService.getBasicReportByUserId(pageable, user, query);
+    }
 
 
-	@RequestMapping(value = {"/graph/{id}", "/{id}/"}, method = RequestMethod.GET)
-	public @ResponseBody
-	JSONObject getGraphReportByReportId(@PathVariable Long id) {
+    @RequestMapping(value = {"/graph/{id}", "/{id}/"}, method = RequestMethod.GET)
+    public @ResponseBody
+    JSONObject getGraphReportByReportId(@PathVariable Long id) {
+        //根据报告id查询当前的图表数据
+        return perfTestReportService.getPerfGraphDataByReportId(id);
+    }
 
-		//根据报告id查询当前的图表数据
-		JSONObject thisperfGraphData = perfTestReportService.getPerfGraphDataByReportId(id);
-		return thisperfGraphData;
-	}
-
-	@RequestMapping(value = {"/basic/{id}", "/{id}/"}, method = RequestMethod.GET)
-	public @ResponseBody
-	JSONObject getBasicReportByReportId(@PathVariable Long id) {
-
-		//根据报告id查询当前的基本数据
-		//PerfTestReport thisPerfTestReport = perfTestReportService.getBasicReportByReportId(id);
-		JSONObject allReportByReportId = perfTestReportService.getAllReportByReportId(id);
-
-		return allReportByReportId;
-	}
+    @RequestMapping(value = {"/basic/{id}", "/{id}/"}, method = RequestMethod.GET)
+    public @ResponseBody
+    JSONObject getBasicReportByReportId(@PathVariable Long id) {
+        return perfTestReportService.getAllReportByReportId(id);
+    }
 
 
-	@RequestMapping(value = {"/{id}", "/{id}/"}, method = RequestMethod.DELETE)
-	public @ResponseBody
-	Object deleteBasicReportByReportId(@PathVariable Long id) {
-		perfTestReportService.deleteBasicReportByReportId(id);
-		return new ResponseEntity<String>(HttpStatus.NO_CONTENT);
-	}
+    @RequestMapping(value = {"/{id}", "/{id}/"}, method = RequestMethod.DELETE)
+    public @ResponseBody
+    Object deleteBasicReportByReportId(@PathVariable Long id) {
+        perfTestReportService.deleteBasicReportByReportId(id);
+        return new ResponseEntity<String>(HttpStatus.NO_CONTENT);
+    }
 
-	@RequestMapping(value = "/hosts/{id}", method = RequestMethod.GET)
-	@ResponseBody
-	public String[] getTargetHosts(User user, @PathVariable(value = "id") long id) {
-		//PerfTest perfTest = perfTestService.getOne(user, id);
-		PerfTestReport thisPerfTestReport = perfTestReportService.getBasicReportByReportId(id);
-		List<String> lstHosts = thisPerfTestReport.getTargetHostIP();
-		return lstHosts.toArray(new String[lstHosts.size()]);
-	}
-
-//	//测试用
-//	@RequestMapping(value = {"/saveReport"}, method = RequestMethod.GET)
-//	@ResponseBody
-//	public String test(User user) {
-//		PerfTestReport perfTestReport = perfTestReportService.saveApiBasicReport(7l, 600, user);
-//		perfTestReportService.savePerfGraph(7l, perfTestReport, "TPS,Errors,Mean_Test_Time_(ms),Mean_time_to_first_byte,User_defined,Vuser", false, 600);
-//		System.out.println("执行成功");
-//		return "基本报告数据和图表数据持久化成功";
-//	}
+    @RequestMapping(value = "/hosts/{id}", method = RequestMethod.GET)
+    @ResponseBody
+    public String[] getTargetHosts(User user, @PathVariable(value = "id") long id) {
+        PerfTestReport thisPerfTestReport = perfTestReportService.getBasicReportByReportId(id);
+        List<String> lstHosts = thisPerfTestReport.getTargetHostIP();
+        return lstHosts.toArray(new String[lstHosts.size()]);
+    }
 }

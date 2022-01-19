@@ -22,7 +22,6 @@ import com.huawei.argus.testreport.repository.TestReportRepository;
 import com.huawei.argus.testreport.service.ITestReportService;
 import org.apache.commons.lang.StringUtils;
 import org.ngrinder.common.util.DateUtils;
-import org.ngrinder.model.PerfTest;
 import org.ngrinder.model.Role;
 import org.ngrinder.model.TestReport;
 import org.ngrinder.model.User;
@@ -30,14 +29,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.domain.Specifications;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Join;
-import javax.persistence.criteria.JoinType;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import java.text.ParseException;
@@ -51,8 +46,8 @@ public class TestReportService implements ITestReportService {
 
 	@Override
 	public TestReport getOne(Long id) {
-		return testReportRepository.findOne(id);
-	}
+        return testReportRepository.findById(id).orElse(null);
+    }
 
 	@Override
 	public TestReport save(TestReport scenario) {
@@ -62,26 +57,26 @@ public class TestReportService implements ITestReportService {
 	@Override
 	public Page<TestReport> getPagedAll(User user, String query, String testType, String testName,
 										String startTime, String endTime, Pageable pageable) {
-		Specifications<TestReport> spec = Specifications.where(idEmptyPredicate());
+        Specification<TestReport> spec = Specification.where(idEmptyPredicate());
 
-		if (user.getRole().equals(Role.USER)) {
-			spec = spec.and(createdBy(user));
-		}
+        if (user.getRole().equals(Role.USER)) {
+            spec = spec.and(createdBy(user));
+        }
 
-		if (!org.springframework.util.StringUtils.isEmpty(testType)) {
-			String[] testTypes = testType.trim().split(",");
-			spec = spec.and(setEqual("testType", testTypes));
-		}
+        if (!org.springframework.util.StringUtils.isEmpty(testType)) {
+            String[] testTypes = testType.trim().split(",");
+            spec = spec.and(setEqual("testType", testTypes));
+        }
 
-		if (!org.springframework.util.StringUtils.isEmpty(testName)) {
-			String[] testNames = testName.trim().split(",");
-			spec = spec.and(setEqual("testName", testNames));
-		}
+        if (!org.springframework.util.StringUtils.isEmpty(testName)) {
+            String[] testNames = testName.trim().split(",");
+            spec = spec.and(setEqual("testName", testNames));
+        }
 
-		if (!org.springframework.util.StringUtils.isEmpty(startTime)) {
-			try {
-				Date startDate = DateUtils.toDate(startTime);
-				spec = spec.and(greaterThanOrEqualTo(startDate));
+        if (!org.springframework.util.StringUtils.isEmpty(startTime)) {
+            try {
+                Date startDate = DateUtils.toDate(startTime);
+                spec = spec.and(greaterThanOrEqualTo(startDate));
 			} catch (ParseException e) {
 				e.printStackTrace();
 			}

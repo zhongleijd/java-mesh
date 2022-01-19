@@ -46,7 +46,6 @@
 
   import javax.annotation.PostConstruct;
   import javax.annotation.PreDestroy;
-
   import java.beans.PropertyChangeEvent;
   import java.beans.PropertyChangeListener;
   import java.io.File;
@@ -84,6 +83,7 @@
 
 
       public static final String NONE_REGION = "NONE";
+      public static final String RUN_PROTOCOL = Config.class.getResource("").getProtocol();
       private boolean cluster;
       private ListenerSupport<PropertyChangeListener> systemConfListeners = new ListenerSupport<PropertyChangeListener>();
 
@@ -310,7 +310,9 @@
        */
       protected void copyDefaultConfigurationFiles() throws IOException {
           checkNotNull(home);
-          home.copyFrom(new ClassPathResource("ngrinder_home_template"), "ngrinder_home_template");
+          home.copyConfigFrom("ngrinder_home_template/");
+          home.copyAgentShell("ngrinder-sh/agent/");
+          home.copyAgentConfigFile("ngrinder_agent_home_template/");
       }
 
       /**

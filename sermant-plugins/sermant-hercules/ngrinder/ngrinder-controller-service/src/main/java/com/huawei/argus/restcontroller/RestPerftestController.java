@@ -20,11 +20,7 @@ package com.huawei.argus.restcontroller;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.huawei.argus.report.service.TpsCalculateService;
-import com.huawei.argus.scenario.service.IScenarioPerfTestService;
-import com.huawei.argus.scenario.service.IScenarioService;
+import com.huawei.argus.testreport.service.impl.TpsCalculateService;
 import net.grinder.util.LogCompressUtils;
 import net.grinder.util.Pair;
 import org.apache.commons.io.FilenameUtils;
@@ -36,7 +32,6 @@ import org.ngrinder.agent.service.AgentManagerService;
 import org.ngrinder.common.constant.ControllerConstants;
 import org.ngrinder.common.constants.GrinderConstants;
 import org.ngrinder.common.controller.RestAPI;
-import org.ngrinder.common.util.DateUtils;
 import org.ngrinder.common.util.FileDownloadUtils;
 import org.ngrinder.infra.config.Config;
 import org.ngrinder.infra.logger.CoreLogger;
@@ -54,7 +49,7 @@ import org.ngrinder.region.service.RegionService;
 import org.ngrinder.script.handler.ScriptHandlerFactory;
 import org.ngrinder.script.model.FileCategory;
 import org.ngrinder.script.model.FileEntry;
-import org.ngrinder.script.service.FileEntryService;
+import org.ngrinder.script.service.NfsFileEntryService;
 import org.ngrinder.user.service.UserService;
 import org.python.google.common.collect.Maps;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,37 +59,31 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.annotation.Nullable;
-import javax.annotation.PostConstruct;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.stream.Collectors;
 
-import static com.google.common.collect.Iterables.filter;
 import static com.google.common.collect.Lists.newArrayList;
 import static org.apache.commons.lang.StringUtils.trimToEmpty;
 import static org.ngrinder.common.util.CollectionUtils.buildMap;
@@ -106,17 +95,16 @@ import static org.ngrinder.common.util.Preconditions.checkNotEmpty;
 import static org.ngrinder.common.util.Preconditions.checkNotNull;
 import static org.ngrinder.common.util.Preconditions.checkNull;
 import static org.ngrinder.common.util.Preconditions.checkState;
-import static org.ngrinder.common.util.Preconditions.checkValidURL;
 
 @RestController
 @RequestMapping("/rest/perftest")
-public class RestPerftestController extends RestBaseController {
+public class RestPerfTestController extends RestBaseController {
 
     @Autowired
     private PerfTestService perfTestService;
 
     @Autowired
-    private FileEntryService fileEntryService;
+    private NfsFileEntryService fileEntryService;
 
     @Autowired
     private AgentManager agentManager;
@@ -136,24 +124,6 @@ public class RestPerftestController extends RestBaseController {
     @Autowired
     private UserService userService;
 
-    private Gson fileEntryGson;
-
-    @Autowired
-    private IScenarioPerfTestService scenarioPerfTestService;
-
-    @Autowired
-    IScenarioService scenarioService;
-
-    /**
-     * Initialize.
-     */
-    @PostConstruct
-    public void init() {
-        GsonBuilder gsonBuilder = new GsonBuilder();
-        gsonBuilder.registerTypeAdapter(FileEntry.class, new FileEntry.FileEntrySerializer());
-        fileEntryGson = gsonBuilder.create();
-    }
-
     /**
      * Get the perf test lists.
      *
@@ -164,46 +134,22 @@ public class RestPerftestController extends RestBaseController {
      * @param pageable    page
      * @return perftest/list
      */
-    @RequestMapping({"/list", "/", ""})
-    public JSONObject getAll(User user, @RequestParam(required = false) String query,
-                             @RequestParam(required = false) String tag, @RequestParam(required = false) String queryFilter,
-                             @PageableDefault(page = 0, size = 10) Pageable pageable,
-                             @RequestParam(required = false) String testName,
-                             @RequestParam(required = false) String testType,
-                             @RequestParam(required = false) String scriptPath,
-                             @RequestParam(required = false) String owner) {
-        pageable = new PageRequest(pageable.getPageNumber(), pageable.getPageSize(),
-            defaultIfNull(pageable.getSort(),
-                new Sort(Sort.Direction.DESC, "id")));
+    @RequestMapping(value = {"/list"}, method = RequestMethod.GET)
+    public Page<PerfTest> getAll(User user, @RequestParam(required = false) String query,
+                                 @RequestParam(required = false) String tag, @RequestParam(required = false) String queryFilter,
+                                 @PageableDefault(page = 0, size = 10) Pageable pageable,
+                                 @RequestParam(required = false) String testName,
+                                 @RequestParam(required = false) String testType,
+                                 @RequestParam(required = false) String scriptPath,
+                                 @RequestParam(required = false) String owner) {
+        Sort sortById = defaultIfNull(pageable.getSort(), Sort.by(Sort.Direction.DESC, "id"));
+        pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sortById);
         Page<PerfTest> tests = perfTestService.getPagedAll(user, query, tag, queryFilter, pageable, testName, testType, scriptPath, owner);
         if (tests.getNumberOfElements() == 0) {
-            pageable = new PageRequest(0, pageable.getPageSize(), defaultIfNull(pageable.getSort(),
-                new Sort(Sort.Direction.DESC, "id")));
+            pageable = PageRequest.of(0, pageable.getPageSize(), sortById);
             tests = perfTestService.getPagedAll(user, query, tag, queryFilter, pageable, testName, testType, scriptPath, owner);
         }
-        annotateDateMarker(tests);
-        JSONObject pageInfo = new JSONObject();
-        pageInfo.put("total", tests.getTotalElements());
-        pageInfo.put("totalPages", tests.getTotalPages());
-        pageInfo.put("content", tests.getContent());
-        JSONObject modelInfos = new JSONObject();
-        modelInfos.put("tag", tag);
-        modelInfos.put("availTags", tagService.getAllTagStrings(user, StringUtils.EMPTY));
-        modelInfos.put("testListPage", pageInfo);
-        modelInfos.put("queryFilter", queryFilter);
-        modelInfos.put("query", query);
-        return modelInfos;
-    }
-
-    @RequestMapping({"/alllist"})
-    public JSONObject getAll(User user, @RequestParam(required = false) String query,
-                             @RequestParam(required = false) String tag, @RequestParam(required = false) String queryFilter,
-                             @RequestParam(required = false) String pages,
-                             @RequestParam(required = false) String testName,
-                             @RequestParam(required = false) String testType,
-                             @RequestParam(required = false) String scriptPath,
-                             @RequestParam(required = false) String owner) {
-        return getAll(user, query, tag, queryFilter, getPageable(pages), testName, testType, scriptPath, owner);
+        return tests;
     }
 
     /**
@@ -211,31 +157,12 @@ public class RestPerftestController extends RestBaseController {
      *
      * @param user  当前用户
      * @param query 查询关键字
-     * @return
+     * @return 获取所有标签
      */
     @RequestMapping({"/allTags"})
     public List<String> getAllTags(User user, @RequestParam(required = false) String query) {
         List<String> allTags = tagService.getAllTagStringsByKeywords(user, query);
         return allTags == null ? Collections.emptyList() : allTags;
-    }
-
-    private void annotateDateMarker(Page<PerfTest> tests) {
-        TimeZone userTZ = TimeZone.getTimeZone(getConfig().getTimezone());
-        Calendar userToday = Calendar.getInstance(userTZ);
-        Calendar userYesterday = Calendar.getInstance(userTZ);
-        userYesterday.add(Calendar.DATE, -1);
-        for (PerfTest test : tests) {
-            Calendar localedModified = Calendar.getInstance(userTZ);
-            localedModified.setTime(DateUtils.convertToUserDate(getConfig().getTimezone(),
-                test.getLastModifiedDate()));
-            if (org.apache.commons.lang.time.DateUtils.isSameDay(userToday, localedModified)) {
-                test.setDateString("today");
-            } else if (org.apache.commons.lang.time.DateUtils.isSameDay(userYesterday, localedModified)) {
-                test.setDateString("yesterday");
-            } else {
-                test.setDateString("earlier");
-            }
-        }
     }
 
     /**
@@ -256,13 +183,12 @@ public class RestPerftestController extends RestBaseController {
      * @param id   perf test id
      * @return perftest/detail
      */
-    @RequestMapping("/perfTestId")
-    public JSONObject getOne(User user, @RequestParam Long id) {
+    @RequestMapping(value = "/perfTest/{id}", method = RequestMethod.GET)
+    public JSONObject getOne(User user, @PathVariable Long id) {
         PerfTest test = null;
         if (id != null) {
             test = getOneWithPermissionCheck(user, id, true);
         }
-
         if (test == null) {
             test = new PerfTest(user);
             test.init();
@@ -281,13 +207,6 @@ public class RestPerftestController extends RestBaseController {
         return modelInfos;
     }
 
-    private ArrayList<String> getRegions(Map<String, MutableInt> agentCountMap) {
-        ArrayList<String> regions = new ArrayList<String>(agentCountMap.keySet());
-        Collections.sort(regions);
-        return regions;
-    }
-
-
     /**
      * Search tags based on the given query.
      *
@@ -295,7 +214,7 @@ public class RestPerftestController extends RestBaseController {
      * @param query query string
      * @return found tag list in json
      */
-    @RequestMapping("/search_tag")
+    @RequestMapping("/search/tag")
     public HttpEntity<String> searchTag(User user, @RequestParam(required = false) String query) {
         List<String> allStrings = tagService.getAllTagStrings(user, query);
         if (StringUtils.isNotBlank(query)) {
@@ -330,66 +249,18 @@ public class RestPerftestController extends RestBaseController {
     }
 
     /**
-     * Get the perf test creation form for quickStart.
-     *
-     * @param user       user
-     * @param urlString  URL string to be tested.
-     * @param scriptType scriptType
-     * @return perftest/detail
-     */
-    @RequestMapping("/quickstart")
-    public JSONObject getQuickStart(User user,
-                                    @RequestParam(value = "url", required = true) String urlString,
-                                    @RequestParam(value = "scriptType", required = true) String scriptType) {
-        URL url = checkValidURL(urlString);
-        FileEntry newEntry = fileEntryService.prepareNewEntryForQuickTest(user, urlString,
-            scriptHandlerFactory.getHandler(scriptType));
-        JSONObject modelInfos = new JSONObject();
-        modelInfos.put(PARAM_QUICK_SCRIPT, newEntry.getPath());
-        modelInfos.put(PARAM_QUICK_SCRIPT_REVISION, newEntry.getRevision());
-        modelInfos.put(PARAM_TEST, createPerfTestFromQuickStart(user, "Test for " + url.getHost(), url.getHost()).toString());
-        Map<String, MutableInt> agentCountMap = agentManagerService.getAvailableAgentCountMap(user);
-
-        modelInfos.put(PARAM_REGION_AGENT_COUNT_MAP, modelStrToJson(agentCountMap.toString()));
-        modelInfos.put(PARAM_REGION_LIST, getRegions(agentCountMap));
-        addDefaultAttributeOnModel(modelInfos);
-        modelInfos.put(PARAM_PROCESS_THREAD_POLICY_SCRIPT, perfTestService.getProcessAndThreadPolicyScript());
-        return modelInfos;
-    }
-
-    /**
-     * Create a new test from quick start mode.
-     *
-     * @param user       user
-     * @param testName   test name
-     * @param targetHost target host
-     * @return test    {@link PerfTest}
-     */
-    private PerfTest createPerfTestFromQuickStart(User user, String testName, String targetHost) {
-        PerfTest test = new PerfTest(user);
-        test.init();
-        test.setTestName(testName);
-        test.setTargetHosts(targetHost);
-        return test;
-    }
-
-    /**
      * Create a new test or cloneTo a current test.
      *
      * @param user     user
      * @param perfTest {@link PerfTest}
-     * @param isClone  true if cloneTo
      * @return redirect:/perftest/list
      */
-    @RequestMapping(value = "/new", method = RequestMethod.POST)
-    public JSONObject saveOne(User user, PerfTest perfTest,
-                              @RequestParam(value = "isClone", required = false, defaultValue = "false") boolean isClone) {
-
+    @RequestMapping(value = "/create", method = RequestMethod.POST)
+    public PerfTest saveOne(User user, @RequestBody PerfTest perfTest) {
         validate(user, null, perfTest);
         // Point to the head revision
         perfTest.setTestName(StringUtils.trimToEmpty(perfTest.getTestName()));
         perfTest.setScriptRevision(-1L);
-        perfTest.prepare(isClone);
         Set<MonitoringHost> monitoringHosts = perfTest.getMonitoringHosts();
         if (monitoringHosts != null && !monitoringHosts.isEmpty()) {
             for (MonitoringHost monitoringHost : monitoringHosts) {
@@ -397,26 +268,7 @@ public class RestPerftestController extends RestBaseController {
                 monitoringHost.setId(null);
             }
         }
-        perfTest = perfTestService.save(user, perfTest);
-        JSONObject modelInfos = new JSONObject();
-
-        modelInfos.put("id", perfTest.getId());
-        modelInfos.put("isShowList", false); // true：展示当前脚本运行状态；false：展示列表，当前脚本为运行
-        modelInfos.put("status", perfTest.getStatus());
-        if (perfTest.getStatus() == Status.SAVED || perfTest.getScheduledTime() != null) {
-            modelInfos.put("scheduledTime", perfTest.getScheduledTime());
-            modelInfos.put("isShowList", true);
-        }
-        return modelInfos;
-    }
-
-    @RequestMapping(value = "/newPerfTest", method = RequestMethod.POST)
-    public JSONObject saveOne(User user, @RequestParam String perfTestInfos,
-                              @RequestParam(value = "isClone", required = false, defaultValue = "false") boolean isClone) {
-
-        PerfTest perfTest = JSONObject.parseObject(perfTestInfos, PerfTest.class);
-        perfTest.setCreatedUser(user);
-        return saveOne(user, perfTest, isClone);
+        return perfTestService.save(user, perfTest);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -459,8 +311,6 @@ public class RestPerftestController extends RestBaseController {
         if (newOne.getStatus() != Status.SAVED) {
             checkArgument(StringUtils.isNotBlank(newOne.getScriptName()), "scriptName should be provided.");
         }
-/*		checkArgument(newOne.getVuserPerAgent() = newOne.getProcesses() * newOne.getThreads(),
-			"vuserPerAgent should be less than (processes * threads)");*/
     }
 
     /**
@@ -475,7 +325,7 @@ public class RestPerftestController extends RestBaseController {
     @RequestMapping(value = "/{id}/leave_comment", method = RequestMethod.POST)
     @ResponseBody
     public JSONObject leaveComment(User user, @PathVariable("id") Long id, @RequestParam("testComment") String testComment,
-                               @RequestParam(value = "tagString", required = false) String tagString) {
+                                   @RequestParam(value = "tagString", required = false) String tagString) {
         perfTestService.addCommentOn(user, id, testComment, tagString);
         return returnSuccess();
     }
@@ -531,9 +381,6 @@ public class RestPerftestController extends RestBaseController {
     public HttpEntity<JSONObject> delete(User user, @RequestParam(value = "ids", defaultValue = "") String ids) {
         for (String idStr : StringUtils.split(ids, ",")) {
             perfTestService.delete(user, NumberUtils.toLong(idStr, 0));
-
-            // 删除场景与压测任务的关系
-            scenarioPerfTestService.deleteByOneId(user, null, NumberUtils.toLong(idStr, 0), null);
         }
         return successJsonHttpEntity();
     }
@@ -555,7 +402,7 @@ public class RestPerftestController extends RestBaseController {
      * @return success json if succeeded.
      */
     @RestAPI
-    @RequestMapping(value = "/api/stop", /** params = "action=stop",**/method = RequestMethod.PUT)
+    @RequestMapping(value = "/api/stop", method = RequestMethod.PUT)
     public HttpEntity<JSONObject> stop(User user, @RequestParam(value = "ids", defaultValue = "") String ids) {
         for (String idStr : StringUtils.split(ids, ",")) {
             perfTestService.stop(user, NumberUtils.toLong(idStr, 0));
@@ -903,15 +750,12 @@ public class RestPerftestController extends RestBaseController {
      * @return JSON containing script's list.
      */
     @RequestMapping("/api/script")
-    public HttpEntity<JSONArray> getScripts(User user, @RequestParam(value = "ownerId", required = false) String ownerId) {
+    public HttpEntity<JSONArray> getScripts(User user, @RequestParam(value = "ownerId", required = false) String ownerId) throws IOException {
         JSONArray data = new JSONArray();
-        List<FileEntry> scripts = newArrayList(filter(fileEntryService.getAll(user),
-            new com.google.common.base.Predicate<FileEntry>() {
-                @Override
-                public boolean apply(@Nullable FileEntry input) {
-                    return input != null && input.getFileType().getFileCategory() == FileCategory.SCRIPT;
-                }
-            }));
+        List<FileEntry> scripts = fileEntryService.getUserScriptAllFiles(user, "/")
+            .stream()
+            .filter(input -> input != null && input.getFileType().getFileCategory() == FileCategory.SCRIPT)
+            .collect(Collectors.toList());
         data.addAll(scripts);
         return toHttpEntity(data);
     }
@@ -931,11 +775,21 @@ public class RestPerftestController extends RestBaseController {
         if (user.getRole() == Role.ADMIN && StringUtils.isNotBlank(ownerId)) {
             user = userService.getOne(ownerId);
         }
-        FileEntry fileEntry = fileEntryService.getOne(user, scriptPath);
+        FileEntry fileEntry = null;
+        try {
+            fileEntry = fileEntryService.getSpecifyScript(scriptPath);
+        } catch (IOException e) {
+            return toHttpEntity(returnError());
+        }
         String targetHosts = "";
         List<String> fileStringList = newArrayList();
         if (fileEntry != null) {
-            List<FileEntry> fileList = fileEntryService.getScriptHandler(fileEntry).getLibAndResourceEntries(user, fileEntry, -1L);
+            List<FileEntry> fileList = null;
+            try {
+                fileList = fileEntryService.getScriptHandler(fileEntry).getLibAndResourceEntries(user, fileEntry, -1L);
+            } catch (IOException e) {
+                return toHttpEntity(returnError());
+            }
             for (FileEntry each : fileList) {
                 fileStringList.add(each.getPath());
             }
@@ -1067,7 +921,7 @@ public class RestPerftestController extends RestBaseController {
     @RequestMapping(value = {"/api/last", "/api", "/api/"}, method = RequestMethod.GET)
     public HttpEntity<String> getAll(User user, @RequestParam(value = "page", defaultValue = "0") int page,
                                      @RequestParam(value = "size", defaultValue = "1") int size) {
-        PageRequest pageRequest = new PageRequest(page, size, new Sort(Sort.Direction.DESC, "id"));
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
         Page<PerfTest> testList = perfTestService.getPagedAll(user, null, null, null, pageRequest);
         return toJsonHttpEntity(testList.getContent());
     }
@@ -1213,183 +1067,5 @@ public class RestPerftestController extends RestBaseController {
         PerfTest savePerfTest = perfTestService.save(user, newOne);
         CoreLogger.LOGGER.info("test {} is created through web api by {}", savePerfTest.getId(), user.getUserId());
         return toJsonHttpEntity(savePerfTest);
-    }
-
-
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-    /**
-     * Get the perf test lists.
-     * NEW
-     *
-     * @param user        user
-     * @param query       query string to search the perf test
-     * @param tag         tag
-     * @param queryFilter "F" means get only finished, "S" means get only scheduled tests.
-     * @param pageable    page
-     * @param model       modelMap
-     * @return perftest/list
-     */
-    @RestAPI
-    @ResponseBody
-    @RequestMapping({"api/list", "api/", "api"})
-    public HttpEntity getAllJson(User user, @RequestParam(required = false) String query,
-                                 @RequestParam(required = false) String tag, @RequestParam(required = false) String queryFilter,
-                                 @PageableDefault(page = 1, size = 10) Pageable pageable, ModelMap model) {
-        pageable = new PageRequest(pageable.getPageNumber() - 1, pageable.getPageSize(),
-            defaultIfNull(pageable.getSort(),
-                new Sort(Sort.Direction.DESC, "id")));
-        Page<PerfTest> tests = perfTestService.getPagedAll(user, query, tag, queryFilter, pageable);
-        int page = pageable.getPageNumber();
-        if (tests.getNumberOfElements() == 0) {
-            pageable = new PageRequest(pageable.getPageNumber(), pageable.getPageSize(), defaultIfNull(pageable.getSort(),
-                new Sort(Sort.Direction.DESC, "id")));
-            tests = perfTestService.getPagedAll(user, query, tag, queryFilter, pageable);
-        }
-        model.clear();
-        annotateDateMarker(tests);
-        model.addAttribute("tag", tag);
-        model.addAttribute("availTags", tagService.getAllTagStrings(user, StringUtils.EMPTY));
-        model.addAttribute("testList", tests.getContent());
-        model.addAttribute("testUser", user.getUserName());
-        model.addAttribute("totalPage", tests.getTotalPages());
-        model.addAttribute("totalCount", tests.getTotalElements());
-        model.addAttribute("queryFilter", queryFilter);
-        model.addAttribute("query", query);
-        putPageIntoModelMap(model, pageable);
-        return toJsonHttpEntity(model);
-    }
-
-    /**
-     * Get the running division in perftest configuration page.
-     * NEW  BUT not complete
-     *
-     * @param user  user
-     * @param model model
-     * @param id    test id
-     * @return perftest/running
-     */
-    @RestAPI
-    @ResponseBody
-    @RequestMapping(value = "api/{id}/running_div")
-    public ResponseEntity<PerfTest> getReportRunningDiv(User user, ModelMap model, @PathVariable long id) {
-        PerfTest test = getOneWithPermissionCheck(user, id, false);
-        model.addAttribute(PARAM_TEST, test);
-        return new ResponseEntity<PerfTest>(test, HttpStatus.OK);
-    }
-
-    /**
-     * Create a new test or cloneTo a current test.
-     *
-     * @param user     user
-     * @param perfTest {@link PerfTest}
-     * @param isClone  true if cloneTo
-     * @return redirect:/perftest/list
-     */
-    @RestAPI
-    @ResponseBody
-    @RequestMapping(value = "api/new", method = RequestMethod.POST)
-    public HttpEntity saveNew(User user, PerfTest perfTest,
-                              @RequestParam(value = "isClone", required = false, defaultValue = "false") boolean isClone) {
-        validate(user, null, perfTest);
-        // Point to the head revision
-        perfTest.setTestName(StringUtils.trimToEmpty(perfTest.getTestName()));
-        perfTest.setScriptRevision(-1L);
-        perfTest.prepare(isClone);
-        perfTest = perfTestService.save(user, perfTest);
-        PerfTest test = perfTestService.getOne(perfTest.getId());
-        return toJsonHttpEntity(test);
-    }
-
-    /**
-     * Get the perf test creation form for quickStart.
-     *
-     * @param user       user
-     * @param urlString  URL string to be tested.
-     * @param scriptType scriptType
-     * @param model      model
-     * @return perftest/detail
-     */
-    @RestAPI
-    @ResponseBody
-    @RequestMapping("api/quickstart")
-    public HttpEntity quickStart(User user,
-                                 @RequestParam(value = "url", required = true) String urlString,
-                                 @RequestParam(value = "scriptType", required = true) String scriptType,
-                                 ModelMap model) {
-        model.clear();
-        URL url = checkValidURL(urlString);
-        FileEntry newEntry = fileEntryService.prepareNewEntryForQuickTest(user, urlString,
-            scriptHandlerFactory.getHandler(scriptType));
-        model.addAttribute(PARAM_QUICK_SCRIPT, newEntry.getPath());
-        model.addAttribute(PARAM_QUICK_SCRIPT_REVISION, newEntry.getRevision());
-        PerfTest test = createPerfTestFromQuickStart(user, "Test for " + url.getHost(), url.getHost());
-        model.addAttribute(PARAM_TEST, test);
-        Map<String, MutableInt> agentCountMap = agentManagerService.getAvailableAgentCountMap(user);
-        model.addAttribute(PARAM_REGION_AGENT_COUNT_MAP, agentCountMap);
-        model.addAttribute(PARAM_REGION_LIST, getRegions(agentCountMap));
-        addDefaultAttributeOnModel(model);
-        model.addAttribute(PARAM_PROCESS_THREAD_POLICY_SCRIPT, perfTestService.getProcessAndThreadPolicyScript());
-        return toJsonHttpEntity(model);
-//		return new ResponseEntity<PerfTest>(test, HttpStatus.CREATED);
-    }
-
-    @RequestMapping(value = "api/{id}/basic_report")
-    public HttpEntity getApiBasicReport(User user, ModelMap model, @PathVariable long id, @RequestParam int imgWidth) {
-        PerfTest test = getOneWithPermissionCheck(user, id, false);
-        String runTime = test.getRuntimeStr();
-        int interval = perfTestService.getReportDataInterval(id, "TPS", imgWidth);
-        model.clear();
-        model.addAttribute(PARAM_LOG_LIST, perfTestService.getLogFiles(id));
-        model.addAttribute(PARAM_TEST_CHART_INTERVAL, interval * test.getSamplingInterval());
-        model.addAttribute(PARAM_TEST, test);
-        model.addAttribute("runTime", runTime);
-        model.addAttribute(PARAM_TPS, perfTestService.getSingleReportDataAsJson(id, "TPS", interval));
-        return toJsonHttpEntity(model);
-    }
-
-    /**
-     * Get the detailed perf test report.
-     *
-     * @param model model
-     * @param id    test id
-     * @return perftest/detail_report
-     */
-    @SuppressWarnings("MVCPathVariableInspection")
-    @RequestMapping(value = {"/api/{id}/detail_report", /** for backward compatibility */"/{id}/report"})
-    public HttpEntity getDetailReport(ModelMap model, @PathVariable("id") long id) {
-        model.clear();
-        model.addAttribute("test", perfTestService.getOne(id));
-        model.addAttribute("plugins", perfTestService.getAvailableReportPlugins(id));
-        return toJsonHttpEntity(model);
-    }
-
-    /**
-     * start the given perf test.
-     *
-     * @param user user
-     * @param id   perf test id to be cloned
-     * @return json string
-     */
-    @SuppressWarnings("MVCPathVariableInspection")
-    @RestAPI
-    @RequestMapping(value = {"/api/{id}/start"})
-    public HttpEntity<String> Start(User user, @PathVariable("id") Long id) {
-        PerfTest test = perfTestService.getOne(user, id);
-        test.setStatus(Status.READY);
-        checkNotNull(test, "no perftest for %s exits", id);
-        if (test.getAgentCount() == null) {
-            test.setAgentCount(0);
-        }
-        Map<String, MutableInt> agentCountMap = agentManagerService.getAvailableAgentCountMap(user);
-        MutableInt agentCountObj = agentCountMap.get(isClustered() ? test.getRegion() : Config.NONE_REGION);
-        checkNotNull(agentCountObj, "test region should be within current region list");
-        int agentMaxCount = agentCountObj.intValue();
-        checkArgument(test.getAgentCount() != 0, "test agent should not be %s", agentMaxCount);
-        checkArgument(test.getAgentCount() <= agentMaxCount, "test agent should be equal to or less than %s",
-            agentMaxCount);
-        PerfTest savePerfTest = perfTestService.save(user, test);
-        CoreLogger.LOGGER.info("test {} is created through web api by {}", test.getId(), user.getUserId());
-        return toJsonHttpEntity(test);
     }
 }

@@ -63,21 +63,21 @@ public class TestReportController extends RestBaseController {
 								  @RequestParam(required = false) String startTime,
 								  @RequestParam(required = false) String endTime,
 								  @RequestParam(required = false) String pages) {
-		Pageable pageable = getPageable(pages);
-		pageable = new PageRequest(pageable.getPageNumber(), pageable.getPageSize(),
-			defaultIfNull(pageable.getSort(),
-				new Sort(Sort.Direction.DESC, "id")));
-		Page<TestReport> testReports = testReportService.getPagedAll(user, query, testType,testNames, startTime, endTime, pageable);
-		if (testReports.getNumberOfElements() == 0) {
-			pageable = new PageRequest(0, pageable.getPageSize(), defaultIfNull(pageable.getSort(),
-				new Sort(Sort.Direction.DESC, "id")));
-			testReports = testReportService.getPagedAll(user, query, testType, testNames, startTime, endTime, pageable);
-		}
-		JSONObject modelInfos = new JSONObject();
-		modelInfos.put("testReportListPage", pageToJson(testReports));
-		putPageIntoModelMap(modelInfos, pageable);
-		return modelInfos;
-	}
+        Pageable pageable = getPageable(pages);
+        pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
+            defaultIfNull(pageable.getSort(),
+                Sort.by(Sort.Direction.DESC, "id")));
+        Page<TestReport> testReports = testReportService.getPagedAll(user, query, testType, testNames, startTime, endTime, pageable);
+        if (testReports.getNumberOfElements() == 0) {
+            pageable = PageRequest.of(0, pageable.getPageSize(), defaultIfNull(pageable.getSort(),
+                Sort.by(Sort.Direction.DESC, "id")));
+            testReports = testReportService.getPagedAll(user, query, testType, testNames, startTime, endTime, pageable);
+        }
+        JSONObject modelInfos = new JSONObject();
+        modelInfos.put("testReportListPage", pageToJson(testReports));
+        putPageIntoModelMap(modelInfos, pageable);
+        return modelInfos;
+    }
 
 
 	@RequestMapping(value = "/delete", method = RequestMethod.POST)

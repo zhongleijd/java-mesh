@@ -13,6 +13,7 @@
  */
 package org.ngrinder.common.model;
 
+import com.huawei.argus.util.ClassPathResourceUtil;
 import org.apache.commons.io.FileUtils;
 import org.ngrinder.common.constants.GrinderConstants;
 import org.ngrinder.common.exception.ConfigurationException;
@@ -23,19 +24,14 @@ import org.ngrinder.model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.util.StringUtils;
 import sun.net.www.protocol.file.FileURLConnection;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.StringReader;
 import java.net.JarURLConnection;
-import java.net.URL;
 import java.net.URLConnection;
-import java.util.Enumeration;
 import java.util.Properties;
-import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 import static org.ngrinder.common.util.ExceptionUtils.processException;
@@ -61,6 +57,7 @@ public class Home {
     private static final String PATH_REPORT = "report";
     private static final String PATH_DIST = "dist";
     private static final String PATH_STAT = "stat";
+    private static final String PATH_AGENT = "agent";
     private final static Logger LOGGER = LoggerFactory.getLogger(Home.class);
     private final File directory;
     public static final String REPORT_CSV = "output.csv";
@@ -99,6 +96,8 @@ public class Home {
         makeSubPath(PATH_PLUGIN);
         makeSubPath(PATH_PERF_TEST);
         makeSubPath(PATH_DOWNLOAD);
+        makeSubPath(PATH_AGENT);
+        makeSubPath(PATH_SCRIPT);
     }
 
     /**
@@ -113,20 +112,19 @@ public class Home {
     /**
      * Copy the given file from given location.
      *
-     * @param from file location
+     * @param dirInJar file location
      */
-    public void copyFrom(ClassPathResource from, String pathStartPrefix) {
+    public void copyConfigFrom(String dirInJar) {
+        ClassPathResource from = new ClassPathResource(dirInJar);
         // Copy missing files
-        if (from == null || !from.exists()) {
-            return;
-        }
         try {
-            URL fromUrl = from.getURL();
-            URLConnection urlConnection = fromUrl.openConnection();
+            URLConnection urlConnection = ClassPathResourceUtil.getUrlConnection(from);
             if (urlConnection instanceof FileURLConnection) {
-                copySystemFile(from.getFile());
+                copySystemFile(directory, from.getFile());
             } else if (urlConnection instanceof JarURLConnection) {
-                copyJarFile((JarURLConnection) urlConnection, pathStartPrefix);
+                JarFile jarFile = ((JarURLConnection) urlConnection).getJarFile();
+                String distDirPath = directory.getPath();
+                ClassPathResourceUtil.copyJarDirToSystemDir(jarFile, dirInJar, "", distDirPath, "conf_template");
             } else {
                 LOGGER.error("Invalid class path resource:{}", from.getPath());
             }
@@ -135,41 +133,73 @@ public class Home {
         }
     }
 
-    private void copySystemFile(File from) throws IOException {
-        for (File file : checkNotNull(from.listFiles())) {
-            if (!(new File(directory, file.getName()).exists())) {
-                FileUtils.copyFileToDirectory(file, directory);
-                continue;
+    /**
+     * 复制agent的配置文件到agent的目录.
+     *
+     * @param agentConfigFile file location
+     */
+    public void copyAgentConfigFile(String agentConfigFile) {
+        ClassPathResource from = new ClassPathResource(agentConfigFile);
+        // Copy missing files
+        try {
+            URLConnection urlConnection = ClassPathResourceUtil.getUrlConnection(from);
+            String distDir = directory.getPath();
+            String agentDir = ClassPathResourceUtil.combineDir(distDir, PATH_AGENT);
+            if (urlConnection instanceof FileURLConnection) {
+                copySystemFile(new File(agentDir), from.getFile());
+            } else if (urlConnection instanceof JarURLConnection) {
+                JarFile jarFile = ((JarURLConnection) urlConnection).getJarFile();
+                String agentConfFile = agentConfigFile + "__agent.conf";
+                ClassPathResourceUtil.copyJarFileToSystemDir(jarFile, agentConfFile, PATH_AGENT, distDir, PATH_AGENT);
+            } else {
+                LOGGER.error("Invalid class path resource:{}", from.getPath());
             }
-            File orgConf = new File(directory, "conf_template");
-            FileUtils.copyFile(file, new File(orgConf, file.getName()));
+        } catch (IOException e) {
+            throw processException("Fail to copy files from " + from.getPath(), e);
         }
     }
 
-    private void copyJarFile(JarURLConnection jarURLConnection, String pathStartPrefix) throws IOException {
-        JarFile jarFile = jarURLConnection.getJarFile();
-        Enumeration<JarEntry> entries = jarFile.entries();
-        while (entries.hasMoreElements()) {
-            JarEntry entry = entries.nextElement();
-            String resourceName = entry.getName();
-            if (!resourceName.startsWith(pathStartPrefix)) {
+    /**
+     * 复制agent的脚本文件到agent的目录.
+     *
+     * @param shellFilePath file location
+     */
+    public void copyAgentShell(String shellFilePath) {
+        ClassPathResource from = new ClassPathResource(shellFilePath);
+        // Copy missing files
+        try {
+            URLConnection urlConnection = ClassPathResourceUtil.getUrlConnection(from);
+            String distDir = directory.getPath();
+            String agentDir = ClassPathResourceUtil.combineDir(distDir, PATH_AGENT);
+            if (urlConnection instanceof FileURLConnection) {
+                copySystemFile(new File(agentDir), from.getFile());
+            } else if (urlConnection instanceof JarURLConnection) {
+                JarFile jarFile = ((JarURLConnection) urlConnection).getJarFile();
+                ClassPathResourceUtil.copyJarDirToSystemDir(jarFile, shellFilePath, PATH_AGENT, distDir, PATH_AGENT);
+            } else {
+                LOGGER.error("Invalid class path resource:{}", from.getPath());
+            }
+        } catch (IOException e) {
+            throw processException("Fail to copy files from " + from.getPath(), e);
+        }
+    }
+
+    /**
+     * 复制本地文件
+     *
+     * @param distDir 目标文件夹
+     * @param from    需要复制的文件
+     * @throws IOException 文件异常
+     */
+    private void copySystemFile(File distDir, File from) throws IOException {
+        for (File file : checkNotNull(from.listFiles())) {
+            if (!(new File(distDir, file.getName()).exists())) {
+                FileUtils.copyFileToDirectory(file, distDir);
                 continue;
             }
-            File templateFile = new File(resourceName);
-            if (templateFile.isDirectory()) {
-                return;
-            }
-            try (InputStream inputStream = jarFile.getInputStream(entry)) {
-                File homeDistFile = new File(directory, templateFile.getName());
-                if (!(homeDistFile.exists())) {
-                    FileUtils.copyInputStreamToFile(inputStream, homeDistFile);
-                    continue;
-                }
-                File orgConf = new File(directory, "conf_template");
-                FileUtils.copyInputStreamToFile(inputStream, new File(orgConf, templateFile.getName()));
-            }
+            File orgConf = new File(distDir, "conf_template");
+            FileUtils.copyFile(file, new File(orgConf, file.getName()));
         }
-        jarFile.close();
     }
 
     /**
@@ -483,5 +513,14 @@ public class Home {
      */
     public File getScriptDirectory(User user) {
         return new File(getSubFile(PATH_SCRIPT), user.getUserId());
+    }
+
+    /**
+     * Get the script directory for the given user.
+     *
+     * @return script directory for the given user.
+     */
+    public File getScriptDirectory() {
+        return getSubFile(PATH_SCRIPT);
     }
 }

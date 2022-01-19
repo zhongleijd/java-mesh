@@ -13,14 +13,6 @@
  */
 package org.ngrinder.perftest.service;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
-
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.ngrinder.model.PerfTest;
@@ -29,11 +21,23 @@ import org.ngrinder.model.User;
 import org.ngrinder.perftest.repository.PerfTestRepository;
 import org.ngrinder.perftest.repository.TagRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import static org.ngrinder.perftest.repository.TagSpecification.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
+
+import static org.ngrinder.perftest.repository.TagSpecification.hasPerfTest;
+import static org.ngrinder.perftest.repository.TagSpecification.isLike;
+import static org.ngrinder.perftest.repository.TagSpecification.isStartWith;
+import static org.ngrinder.perftest.repository.TagSpecification.lastModifiedOrCreatedBy;
+import static org.ngrinder.perftest.repository.TagSpecification.valueIn;
 
 /**
  * Tag Service. Tag support which is used to categorize {@link PerfTest}
@@ -60,24 +64,24 @@ public class TagService {
 	 */
 	@Transactional
 	public SortedSet<Tag> addTags(User user, String[] tags) {
-		if (ArrayUtils.isEmpty(tags)) {
-			return new TreeSet<Tag>();
-		}
+        if (ArrayUtils.isEmpty(tags)) {
+            return new TreeSet<Tag>();
+        }
 
-		Specifications<Tag> spec = Specifications.where(lastModifiedOrCreatedBy(user)).and(valueIn(tags));
-		List<Tag> foundTags = tagRepository.findAll(spec);
-		SortedSet<Tag> allTags = new TreeSet<Tag>(foundTags);
-		for (String each : tags) {
-			Tag newTag = new Tag(StringUtils.trimToEmpty(StringUtils.replace(each, ",", "")));
-			if (allTags.contains(newTag)) {
-				continue;
-			}
-			if (!foundTags.contains(newTag) && !allTags.contains(newTag)) {
-				allTags.add(saveTag(user, newTag));
-			}
-		}
-		return allTags;
-	}
+        Specification<Tag> spec = Specification.where(lastModifiedOrCreatedBy(user)).and(valueIn(tags));
+        List<Tag> foundTags = tagRepository.findAll(spec);
+        SortedSet<Tag> allTags = new TreeSet<Tag>(foundTags);
+        for (String each : tags) {
+            Tag newTag = new Tag(StringUtils.trimToEmpty(StringUtils.replace(each, ",", "")));
+            if (allTags.contains(newTag)) {
+                continue;
+            }
+            if (!foundTags.contains(newTag) && !allTags.contains(newTag)) {
+                allTags.add(saveTag(user, newTag));
+            }
+        }
+        return allTags;
+    }
 
 	/**
 	 * Get all tags which belongs to given user and start with given string.
@@ -87,22 +91,22 @@ public class TagService {
 	 * @return found tags
 	 */
 	public List<Tag> getAllTags(User user, String startWith) {
-		Specifications<Tag> spec = Specifications.where(hasPerfTest());
-		spec = spec.and(lastModifiedOrCreatedBy(user));
-		if (StringUtils.isNotBlank(startWith)) {
-			spec = spec.and(isStartWith(StringUtils.trimToEmpty(startWith)));
-		}
-		return tagRepository.findAll(spec);
-	}
+        Specification<Tag> spec = Specification.where(hasPerfTest());
+        spec = spec.and(lastModifiedOrCreatedBy(user));
+        if (StringUtils.isNotBlank(startWith)) {
+            spec = spec.and(isStartWith(StringUtils.trimToEmpty(startWith)));
+        }
+        return tagRepository.findAll(spec);
+    }
 
 	public List<Tag> getAllTagsByKeywords(User user, String query) {
-		Specifications<Tag> spec = Specifications.where(hasPerfTest());
-		spec = spec.and(lastModifiedOrCreatedBy(user));
-		if (StringUtils.isNotBlank(query)) {
-			spec = spec.and(isLike(StringUtils.trimToEmpty(query)));
-		}
-		return tagRepository.findAll(spec);
-	}
+        Specification<Tag> spec = Specification.where(hasPerfTest());
+        spec = spec.and(lastModifiedOrCreatedBy(user));
+        if (StringUtils.isNotBlank(query)) {
+            spec = spec.and(isLike(StringUtils.trimToEmpty(query)));
+        }
+        return tagRepository.findAll(spec);
+    }
 
 	/**
 	 * Get all tags which belongs to given user and start with given string.
@@ -156,12 +160,12 @@ public class TagService {
 	 */
 	@Transactional
 	public void deleteTag(User user, Tag tag) {
-		for (PerfTest each : tag.getPerfTests()) {
-			each.getTags().remove(tag);
-		}
-		perfTestRepository.save(tag.getPerfTests());
-		tagRepository.delete(tag);
-	}
+        for (PerfTest each : tag.getPerfTests()) {
+            each.getTags().remove(tag);
+        }
+        perfTestRepository.saveAll(tag.getPerfTests());
+        tagRepository.delete(tag);
+    }
 
 	/**
 	 * Delete all tags belonging to given user.
@@ -170,17 +174,17 @@ public class TagService {
 	 */
 	@Transactional
 	public void deleteTags(User user) {
-		Specifications<Tag> spec = Specifications.where(lastModifiedOrCreatedBy(user));
-		List<Tag> userTags = tagRepository.findAll(spec);
-		for (Tag each : userTags) {
-			Set<PerfTest> perfTests = each.getPerfTests();
-			if (perfTests != null) {
-				for (PerfTest eachPerfTest : perfTests) {
-					eachPerfTest.getTags().remove(each);
-				}
-				perfTestRepository.save(each.getPerfTests());
-			}
-		}
-		tagRepository.delete(userTags);
-	}
+        Specification<Tag> spec = Specification.where(lastModifiedOrCreatedBy(user));
+        List<Tag> userTags = tagRepository.findAll(spec);
+        for (Tag each : userTags) {
+            Set<PerfTest> perfTests = each.getPerfTests();
+            if (perfTests != null) {
+                for (PerfTest eachPerfTest : perfTests) {
+                    eachPerfTest.getTags().remove(each);
+                }
+                perfTestRepository.saveAll(each.getPerfTests());
+            }
+        }
+        tagRepository.deleteAll(userTags);
+    }
 }

@@ -1,4 +1,4 @@
-/* 
+/*
  * Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
@@ -9,7 +9,7 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
- * limitations under the License. 
+ * limitations under the License.
  */
 package org.ngrinder.script.service;
 
@@ -52,38 +52,38 @@ import static org.ngrinder.common.util.TypeConvertUtils.cast;
 @Service
 public class ScriptValidationService extends AbstractScriptValidationService {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(ScriptValidationService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ScriptValidationService.class);
 
-	@Autowired
-	private LocalScriptTestDriveService localScriptTestDriveService;
+    @Autowired
+    private LocalScriptTestDriveService localScriptTestDriveService;
 
-	@Autowired
-	private FileEntryService fileEntryService;
+    @Autowired
+    private NfsFileEntryService fileEntryService;
 
-	@Autowired
-	private Config config;
+    @Autowired
+    private Config config;
 
-	@Autowired
-	private ScriptHandlerFactory scriptHandlerFactory;
+    @Autowired
+    private ScriptHandlerFactory scriptHandlerFactory;
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * org.ngrinder.script.service.IScriptValidationService#validate(org
-	 * .ngrinder.model.User, org.ngrinder.model.IFileEntry, boolean,
-	 * java.lang.String)
-	 */
-	@Override
-	public String validate(User user, IFileEntry scriptIEntry, boolean useScriptInSVN, String hostString) {
-		FileEntry scriptEntry = cast(scriptIEntry);
-		try {
-			checkNotNull(scriptEntry, "scriptEntity should be not null");
-			checkNotEmpty(scriptEntry.getPath(), "scriptEntity path should be provided");
-			if (!useScriptInSVN) {
-				checkNotEmpty(scriptEntry.getContent(), "scriptEntity content should be provided");
-			}
-			checkNotNull(user, "user should be provided");
+    /*
+     * (non-Javadoc)
+     *
+     * @see
+     * org.ngrinder.script.service.IScriptValidationService#validate(org
+     * .ngrinder.model.User, org.ngrinder.model.IFileEntry, boolean,
+     * java.lang.String)
+     */
+    @Override
+    public String validate(User user, IFileEntry scriptIEntry, boolean useScriptInSVN, String hostString) {
+        FileEntry scriptEntry = cast(scriptIEntry);
+        try {
+            checkNotNull(scriptEntry, "scriptEntity should be not null");
+            checkNotEmpty(scriptEntry.getPath(), "scriptEntity path should be provided");
+            if (!useScriptInSVN) {
+                checkNotEmpty(scriptEntry.getContent(), "scriptEntity content should be provided");
+            }
+            checkNotNull(user, "user should be provided");
 			// String result = checkSyntaxErrors(scriptEntry.getContent());
 
 			ScriptHandler handler = scriptHandlerFactory.getHandler(scriptEntry);
@@ -105,12 +105,12 @@ public class ScriptValidationService extends AbstractScriptValidationService {
 			}
 			File scriptFile = new File(scriptDirectory, FilenameUtils.getName(scriptEntry.getPath()));
 
-			if (useScriptInSVN) {
-				fileEntryService.writeContentTo(user, scriptEntry.getPath(), scriptDirectory);
-			} else {
-				FileUtils.writeStringToFile(scriptFile, scriptEntry.getContent(),
-						StringUtils.defaultIfBlank(scriptEntry.getEncoding(), "UTF-8"));
-			}
+            if (useScriptInSVN) {
+                fileEntryService.writeContentTo(scriptEntry, scriptDirectory);
+            } else {
+                FileUtils.writeStringToFile(scriptFile, scriptEntry.getContent(),
+                    StringUtils.defaultIfBlank(scriptEntry.getEncoding(), "UTF-8"));
+            }
 			File doValidate = localScriptTestDriveService.doValidate(scriptDirectory, scriptFile, new Condition(),
 					config.isSecurityEnabled(), config.getSecurityLevel(), hostString, getTimeout());
 			List<String> readLines = FileUtils.readLines(doValidate);

@@ -7,6 +7,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.web.servlet.MultipartConfigFactory;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
@@ -16,16 +17,19 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.util.ErrorHandler;
+import org.springframework.util.unit.DataSize;
+import org.springframework.util.unit.DataUnit;
 
 import javax.servlet.MultipartConfigElement;
 import java.io.IOException;
 
-@SpringBootApplication(scanBasePackages = {"org.ngrinder","com.huawei"})
+@SpringBootApplication(scanBasePackages = {"org.ngrinder", "com.huawei"})
 @EnableScheduling
 @EnableTransactionManagement
 @EnableAspectJAutoProxy(proxyTargetClass = true)
-@EnableJpaRepositories(basePackages = { "org.ngrinder","com.huawei" })
-@EntityScan(basePackages = { "org.ngrinder","com.huawei" })
+@EnableJpaRepositories(basePackages = {"org.ngrinder", "com.huawei"})
+@EntityScan(basePackages = {"org.ngrinder", "com.huawei"})
+@EnableCaching
 public class StartNgrinderApplication {
     private static final Logger LOGGER = LoggerFactory.getLogger(StartNgrinderApplication.class);
     public static void main(String[] args) throws IOException {
@@ -55,9 +59,9 @@ public class StartNgrinderApplication {
     public MultipartConfigElement multipartConfigElement() {
         MultipartConfigFactory factory = new MultipartConfigFactory();
         //  单个数据大小
-        factory.setMaxFileSize("100MB");
+        factory.setMaxFileSize(DataSize.of(100, DataUnit.KILOBYTES));
         /// 总上传数据大小
-        factory.setMaxRequestSize("200MB");
+        factory.setMaxRequestSize(DataSize.of(100, DataUnit.KILOBYTES));
         return factory.createMultipartConfig();
     }
 }

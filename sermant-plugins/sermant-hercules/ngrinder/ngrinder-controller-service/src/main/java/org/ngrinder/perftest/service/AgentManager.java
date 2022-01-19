@@ -13,13 +13,12 @@
  */
 package org.ngrinder.perftest.service;
 
-import com.huawei.argus.perftest.service.IPerfTestTaskService;
+import com.huawei.argus.perftest.IPerfTestTaskService;
 import net.grinder.AgentControllerServerDaemon;
 import net.grinder.SingleConsole;
 import net.grinder.common.GrinderProperties;
 import net.grinder.common.processidentity.AgentIdentity;
 import net.grinder.console.communication.AgentDownloadRequestListener;
-import net.grinder.console.communication.AgentProcessControlImplementation;
 import net.grinder.console.communication.AgentProcessControlImplementation.AgentStatus;
 import net.grinder.console.communication.LogArrivedListener;
 import net.grinder.console.model.ConsoleCommunicationSetting;
@@ -52,7 +51,11 @@ import javax.annotation.PreDestroy;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -68,27 +71,28 @@ import java.util.concurrent.ExecutorService;
 public class AgentManager implements ControllerConstants, AgentDownloadRequestListener {
 	public static final Logger LOGGER = LoggerFactory.getLogger(AgentManager.class);
 	private AgentControllerServerDaemon agentControllerServerDaemon;
-	private static final int NUMBER_OF_THREAD = 3;
+    private static final int NUMBER_OF_THREAD = 3;
 
-	@Autowired
-	private Config config;
+    @Autowired
+    private Config config;
 
-	@Autowired
-	private AgentPackageService agentPackageService;
+    @Autowired
+    private AgentPackageService agentPackageService;
 
-	@Autowired
-	private LocalAgentService cachedLocalAgentService;
-	@Autowired
-	private IPerfTestTaskService perfTestTaskService;
+    @Autowired
+    private LocalAgentService cachedLocalAgentService;
 
-	/**
-	 * Initialize agent manager.
-	 */
-	@PostConstruct
-	public void init() {
-		int port = config.getControllerPort();
+    @Autowired
+    private IPerfTestTaskService perfTestTaskService;
 
-		ConsoleCommunicationSetting consoleCommunicationSetting = ConsoleCommunicationSetting.asDefault();
+    /**
+     * Initialize agent manager.
+     */
+    @PostConstruct
+    public void init() {
+        int port = config.getControllerPort();
+
+        ConsoleCommunicationSetting consoleCommunicationSetting = ConsoleCommunicationSetting.asDefault();
 		if (config.getInactiveClientTimeOut() > 0) {
 			consoleCommunicationSetting.setInactiveClientTimeOut(config.getInactiveClientTimeOut());
 		}

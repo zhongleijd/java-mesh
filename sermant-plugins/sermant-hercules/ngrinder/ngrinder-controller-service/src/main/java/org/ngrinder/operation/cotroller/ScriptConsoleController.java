@@ -23,7 +23,7 @@ import org.ngrinder.perftest.service.ConsoleManager;
 import org.ngrinder.perftest.service.PerfTestService;
 import org.ngrinder.perftest.service.TagService;
 import org.ngrinder.region.service.RegionService;
-import org.ngrinder.script.service.FileEntryService;
+import org.ngrinder.script.service.NfsFileEntryService;
 import org.ngrinder.user.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
@@ -60,26 +60,26 @@ public class ScriptConsoleController extends BaseController implements Applicati
 	private AgentManager agentManager;
 
 
-	@Autowired
-	private AgentManagerService agentManagerService;
+    @Autowired
+    private AgentManagerService agentManagerService;
 
-	@Autowired
-	private ConsoleManager consoleManager;
+    @Autowired
+    private ConsoleManager consoleManager;
 
-	@Autowired
-	private PerfTestService perfTestService;
+    @Autowired
+    private PerfTestService perfTestService;
 
-	@Autowired
-	private FileEntryService fileEntryService;
+    @Autowired
+    private NfsFileEntryService fileEntryService;
 
-	@Autowired
-	private UserService userService;
+    @Autowired
+    private UserService userService;
 
-	@Autowired
-	private RegionService regionService;
+    @Autowired
+    private RegionService regionService;
 
-	@Autowired
-	private PluginManager pluginManager;
+    @Autowired
+    private PluginManager pluginManager;
 
 	@Autowired
 	private TagService tagService;
