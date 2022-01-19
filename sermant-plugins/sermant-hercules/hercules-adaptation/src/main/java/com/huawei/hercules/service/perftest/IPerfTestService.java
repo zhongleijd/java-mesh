@@ -16,6 +16,7 @@
 
 package com.huawei.hercules.service.perftest;
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.huawei.hercules.config.FeignRequestInterceptor;
 import com.huawei.hercules.fallback.PerfTestServiceFallbackFactory;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
+import java.util.Map;
 
 @FeignClient(url = "${controller.engine.url}" + "/rest/perftest",
         name = "perftest",
@@ -89,7 +91,7 @@ public interface IPerfTestService {
      * @return 脚本信息
      */
     @RequestMapping("/api/script")
-    HttpEntity<String> getScripts(@RequestParam(value = "ownerId", required = false) String ownerId);
+    HttpEntity<JSONArray> getScripts(@RequestParam(value = "ownerId", required = false) String ownerId);
 
     /**
      * 查询脚本资源文件
@@ -99,7 +101,7 @@ public interface IPerfTestService {
      * @return 查询脚本资源信息
      */
     @RequestMapping("/api/resource")
-    HttpEntity<String> getResources(@RequestParam String scriptPath,
+    HttpEntity<JSONObject> getResources(@RequestParam String scriptPath,
                                     @RequestParam(required = false) String ownerId);
 
     /**
@@ -138,7 +140,7 @@ public interface IPerfTestService {
     JSONObject getReportById(@RequestParam long id);
 
     @RequestMapping({"/api/perf"})
-    HttpEntity<String> getPerfGraphById(@RequestParam("id") long id, @RequestParam(defaultValue = "") String dataType, @RequestParam(defaultValue = "false") boolean onlyTotal, @RequestParam int imgWidth);
+    HttpEntity<JSONObject> getPerfGraphById(@RequestParam("id") long id, @RequestParam(defaultValue = "") String dataType, @RequestParam(defaultValue = "false") boolean onlyTotal, @RequestParam int imgWidth);
 
     /**
      * 运行时数据
@@ -147,7 +149,7 @@ public interface IPerfTestService {
      * @return 实时测试采集数据
      */
     @RequestMapping(value = "/api/sample")
-    HttpEntity<String> refreshTestRunningById(@RequestParam long id);
+    HttpEntity<JSONObject> refreshTestRunningById(@RequestParam long id);
 
     /**
      * 停止任务
@@ -180,6 +182,7 @@ public interface IPerfTestService {
 
     /**
      * 查询压测任务的标签
+     *
      * @param query 查询关键字
      * @return 标签列表
      */

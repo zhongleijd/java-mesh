@@ -170,26 +170,25 @@ public class AgentManagerController {
             LOGGER.error("The agent not exist in system, get performance failed, id={}", agentId);
             throw new HerculesException("The agent not exist in system, id=" + agentId);
         }
-        HttpEntity<String> httpEntity = agentManagerService.getState(agentId,
+        HttpEntity<JSONObject> httpEntity = agentManagerService.getState(agentId,
                 agentInfoJSONObject.getString(DatabaseColumn.AGENT_IP),
                 agentInfoJSONObject.getString(DatabaseColumn.AGENT_NAME));
         if (httpEntity == null) {
             LOGGER.error("The response is null when get agent performance, id = [{}].", agentId);
             throw new HerculesException("The response is null when get agent performance, id=[" + agentId + "].");
         }
-        String performanceInfoString = httpEntity.getBody();
-        if (StringUtils.isEmpty(performanceInfoString)) {
+        JSONObject performanceInfoString = httpEntity.getBody();
+        if (performanceInfoString == null) {
             LOGGER.error("Failed to get agent performance, id = [{}].", agentId);
             throw new HerculesException("Failed to get agent performance, id=[" + agentId + "].");
         }
         LOGGER.debug("The agent(id={}) performance:{}.", agentId, performanceInfoString);
-        JSONObject agentPerformanceJson = JSONObject.parseObject(performanceInfoString);
 
         // data for cpu and memory
         Map<String, Object> data = new HashMap<>();
-        data.put(CPU_USAGE_ELEMENT, agentPerformanceJson.get(CPU_USED_PERCENTAGE));
-        long usedMemory = agentPerformanceJson.getLongValue(TOTAL_MEMORY)
-                - agentPerformanceJson.getLongValue(FREE_MEMORY);
+        data.put(CPU_USAGE_ELEMENT, performanceInfoString.get(CPU_USED_PERCENTAGE));
+        long usedMemory = performanceInfoString.getLongValue(TOTAL_MEMORY)
+                - performanceInfoString.getLongValue(FREE_MEMORY);
         data.put(MEMORY_USAGE_ELEMENT, usedMemory / MEMORY_CONVERSION_RATE);
 
         // build response message

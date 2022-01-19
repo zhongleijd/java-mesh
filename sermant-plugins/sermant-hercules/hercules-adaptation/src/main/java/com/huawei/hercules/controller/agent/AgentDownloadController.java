@@ -87,12 +87,10 @@ public class AgentDownloadController {
     @RequestMapping(value = "/link", method = RequestMethod.GET)
     JSONObject downloadUrl(@RequestParam(value = "owner", required = false) String owner,
                            @RequestParam(value = "region", required = false) String region) {
-        String packageName = agentDownloadService.download(owner, region);
-        LOGGER.info("Get the package name: {}.", packageName);
-        JSONObject jsonObject = new JSONObject();
-        Map<String, String> link = new HashMap<>();
-        link.put("link", packageName);
-        jsonObject.put(ResponseColumn.RESPONSE_DATA_ELEMENT, link);
-        return jsonObject;
+        JSONObject response = agentDownloadService.download(owner, region);
+        LOGGER.info("Get the package name: {}.", response);
+        JSONObject packageInfo = new JSONObject();
+        packageInfo.put(ResponseColumn.RESPONSE_DATA_ELEMENT, response);
+        return packageInfo;
     }
 }
