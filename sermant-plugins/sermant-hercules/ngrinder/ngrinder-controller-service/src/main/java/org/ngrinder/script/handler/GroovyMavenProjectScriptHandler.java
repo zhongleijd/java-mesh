@@ -78,7 +78,7 @@ public class GroovyMavenProjectScriptHandler extends GroovyScriptHandler impleme
         }
 
         try {
-            getNfsFileEntryService().getSpecifyScript(getBasePath(path) + "/pom.xml");
+            getNfsFileEntryService().getSpecifyScript(fileEntry.getCreatedUser(), getBasePath(path) + "/pom.xml");
             return true;
         } catch (IOException e) {
             return false;
@@ -128,7 +128,7 @@ public class GroovyMavenProjectScriptHandler extends GroovyScriptHandler impleme
                     fileList.add(eachFileEntry);
                 }
             }
-            fileList.add(getNfsFileEntryService().getSpecifyScript(basePath + "/pom.xml"));
+            fileList.add(getNfsFileEntryService().getSpecifyScript(user, getBasePath(basePath) + "/pom.xml"));
         } catch (IOException e) {
             LOGGER.error("Query maven script fail.");
         }

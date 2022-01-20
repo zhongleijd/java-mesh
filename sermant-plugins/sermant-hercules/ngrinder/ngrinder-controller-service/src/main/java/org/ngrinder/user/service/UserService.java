@@ -169,7 +169,7 @@ public class UserService extends AbstractUserService {
 	}
 
 	private void prepareUserEnv(User user) {
-        fileEntryService.prepare(user);
+        fileEntryService.prepareUserScriptBaseDir(user);
     }
 
 

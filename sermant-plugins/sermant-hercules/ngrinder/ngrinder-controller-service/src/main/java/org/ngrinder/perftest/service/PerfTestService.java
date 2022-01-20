@@ -687,7 +687,7 @@ public class PerfTestService extends AbstractPerfTestService implements Controll
 
             // Get all files in the script path
             String scriptName = perfTest.getScriptName();
-            FileEntry userDefinedGrinderProperties = fileEntryService.getSpecifyScript(
+            FileEntry userDefinedGrinderProperties = fileEntryService.getSpecifyScript(perfTest.getCreatedUser(),
                 FilenameUtils.concat(FilenameUtils.getPath(scriptName), DEFAULT_GRINDER_PROPERTIES));
             if (!config.isSecurityEnabled() && userDefinedGrinderProperties != null) {
                 // Make the property overridden by user property.

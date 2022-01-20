@@ -14,16 +14,14 @@
 
 package org.ngrinder.script.service;
 
+import com.beust.jcommander.internal.Lists;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
 import org.ngrinder.common.util.EncodingUtils;
-import org.ngrinder.common.util.PathUtils;
-import org.ngrinder.common.util.UrlUtils;
 import org.ngrinder.infra.config.Config;
 import org.ngrinder.model.PerfTest;
 import org.ngrinder.model.User;
-import org.ngrinder.script.handler.ProjectHandler;
 import org.ngrinder.script.handler.ScriptHandler;
 import org.ngrinder.script.handler.ScriptHandlerFactory;
 import org.ngrinder.script.model.FileEntry;
@@ -39,13 +37,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
-
-import static org.ngrinder.common.util.CollectionUtils.buildMap;
-import static org.ngrinder.common.util.CollectionUtils.newHashMap;
 
 /**
  * 功能描述：
@@ -78,16 +74,7 @@ public class NfsFileEntryService {
     }
 
     /**
-     * 获取指定用户的脚本保存路径
-     *
-     * @return 用户脚本保存的路径
-     */
-    public File getBaseScriptsDir() {
-        return config.getHome().getScriptDirectory();
-    }
-
-    /**
-     * 获取指定用户的脚本保存路径
+     * 获取指定用户的脚本保存路径，绝对路径
      *
      * @param user 获取用户
      * @return 用户脚本保存的路径
@@ -97,7 +84,7 @@ public class NfsFileEntryService {
     }
 
     /**
-     * 获取指定用户的脚本保存路径
+     * 获取指定用户的脚本保存路径，绝对路径
      *
      * @param user 获取用户
      * @param path 用户脚本路径下面的文件子路径
@@ -117,11 +104,7 @@ public class NfsFileEntryService {
     public List<FileEntry> getUserScriptAllFiles(User user, String filePath) throws IOException {
         File oneScriptDir = new File(getUserScriptsDir(user), filePath);
         List<FileEntry> userTestScriptList = new ArrayList<>();
-        addFileEntry(oneScriptDir, userTestScriptList);
-        for (FileEntry fileEntry : userTestScriptList) {
-            fileEntry.setCreatedUser(user);
-            fileEntry.setLastModifiedUser(user);
-        }
+        addFileEntry(oneScriptDir, user, userTestScriptList);
         return userTestScriptList;
     }
 
@@ -133,42 +116,14 @@ public class NfsFileEntryService {
      * @throws IOException 文件不存在
      */
     public FileEntry getSpecifyScript(PerfTest perfTest) throws IOException {
-        if (perfTest == null) {
+        if (perfTest == null || perfTest.getCreatedUser() == null) {
             return null;
         }
-        File testScriptBaseDir = getUserScriptsDir(perfTest.getCreatedUser());
-        File testScript = new File(testScriptBaseDir, perfTest.getScriptNameInShort());
-        return createFileTypeEntry(testScript);
+        User createdUser = perfTest.getCreatedUser();
+        File testScriptBaseDir = getUserScriptsDir(createdUser);
+        File testScript = new File(testScriptBaseDir, perfTest.getScriptName());
+        return buildFileEntry(testScript, createdUser);
     }
-
-    /**
-     * 获取指定脚本文件
-     *
-     * @param file 需要获取的文件在路径
-     * @return 文件明细
-     * @throws IOException 文件不存在
-     */
-    public FileEntry getSpecifyScript(File file) throws IOException {
-        if (file == null) {
-            return null;
-        }
-        return createFileTypeEntry(file);
-    }
-
-    /**
-     * 获取指定脚本文件
-     *
-     * @param filePath 需要获取的文件在路径
-     * @return 文件明细
-     * @throws IOException 文件不存在
-     */
-    public FileEntry getSpecifyScript(String filePath) throws IOException {
-        if (StringUtils.isEmpty(filePath)) {
-            return null;
-        }
-        return createFileTypeEntry(new File(filePath));
-    }
-
 
     /**
      * 获取指定脚本文件
@@ -182,8 +137,8 @@ public class NfsFileEntryService {
         if (perfTest == null || user == null) {
             return null;
         }
-        File testScript = new File(getUserScriptsDir(user), perfTest.getScriptNameInShort());
-        return createFileTypeEntry(testScript);
+        File testScript = new File(getUserScriptsDir(user), perfTest.getScriptName());
+        return buildFileEntry(testScript, user);
     }
 
     /**
@@ -199,7 +154,7 @@ public class NfsFileEntryService {
             return null;
         }
         File testScript = new File(getUserScriptsDir(user), file.getPath());
-        return createFileTypeEntry(testScript);
+        return buildFileEntry(testScript, user);
     }
 
     /**
@@ -215,32 +170,31 @@ public class NfsFileEntryService {
             return null;
         }
         File testScript = new File(getUserScriptsDir(user), filePath);
-        return createFileTypeEntry(testScript);
+        return buildFileEntry(testScript, user);
     }
 
     /**
      * 把指定文件封装成{@link FileEntry}放入到列表中
      *
      * @param file               如果是文件夹，则递归调用该方法，如果是文件则直接封装
+     * @param user               用户
      * @param userTestScriptList 保存明细的列表
      */
-    private void addFileEntry(File file, List<FileEntry> userTestScriptList) throws IOException {
-        if (file == null) {
+    private void addFileEntry(File file, User user, List<FileEntry> userTestScriptList) throws IOException {
+        if (file == null || user == null) {
             return;
         }
         if (file.isFile()) {
-            FileEntry fileEntry = createFileTypeEntry(file);
+            FileEntry fileEntry = buildFileEntry(file, user);
             userTestScriptList.add(fileEntry);
             return;
         }
-        if (file.isDirectory()) {
-            File[] files = file.listFiles();
-            if (files == null) {
-                return;
-            }
-            for (File childFile : files) {
-                addFileEntry(childFile, userTestScriptList);
-            }
+        File[] files = file.listFiles();
+        if (files == null || files.length == 0) {
+            return;
+        }
+        for (File childFile : files) {
+            addFileEntry(childFile, user, userTestScriptList);
         }
     }
 
@@ -250,13 +204,13 @@ public class NfsFileEntryService {
      * @param file 文件
      * @return FileEntry对象
      */
-    private FileEntry createFileTypeEntry(File file) throws IOException {
+    private FileEntry buildFileEntry(File file, User user) throws IOException {
         if (file == null || !file.exists() || file.isDirectory()) {
             return null;
         }
         FileEntry script = new FileEntry();
-        script.setPath(file.getPath());
-        script.setFileType(FileType.getFileTypeByExtension(FilenameUtils.getExtension(script.getFileName())));
+        script.setPath(file.getPath().replace(getUserScriptsDir(user).getPath(), ""));
+        script.setFileType(FileType.getFileTypeByExtension(FilenameUtils.getExtension(file.getName())));
         byte[] contentBytes;
         try (FileInputStream fis = new FileInputStream(file);
              ByteArrayOutputStream cacheByteArray = new ByteArrayOutputStream()) {
@@ -270,11 +224,11 @@ public class NfsFileEntryService {
         }
         if (script.getFileType().isEditable()) {
             String autoDetectedEncoding = EncodingUtils.detectEncoding(contentBytes, "UTF-8");
-            script.setContent((new String(contentBytes, autoDetectedEncoding)).replaceAll("&quot;", "\""));
+            script.setContent((new String(contentBytes, autoDetectedEncoding)));
             script.setEncoding(autoDetectedEncoding);
         }
         script.setContentBytes(contentBytes);
-        script.setDescription(file.getCanonicalPath());
+        script.setDescription("");
         script.setRevision(1);
         script.setLastRevision(1);
         script.setCreatedDate(new Date(file.lastModified()));
@@ -286,39 +240,49 @@ public class NfsFileEntryService {
     /**
      * 复制文件到指定目录里面
      *
-     * @param each  文件信息
-     * @param toDir 目标目录
+     * @param fileEntry 文件信息
+     * @param toDir     目标目录
      * @throws IOException 文件流操作异常
      */
-    public void writeContentTo(FileEntry each, File toDir) throws IOException {
-        if (each == null || toDir == null) {
+    public void writeContentTo(FileEntry fileEntry, File toDir) throws IOException {
+        if (fileEntry == null || toDir == null) {
             return;
         }
-        String filePath = each.getPath();
+        String filePath = fileEntry.getPath();
         String fileName = new File(filePath).getName();
-        try (ByteArrayInputStream inputStream = new ByteArrayInputStream(each.getContentBytes())) {
+        try (ByteArrayInputStream inputStream = new ByteArrayInputStream(fileEntry.getContentBytes())) {
             FileUtils.copyInputStreamToFile(inputStream, new File(toDir, fileName));
         }
     }
 
+    /**
+     * 保存用户脚本文件到用户脚本目录
+     *
+     * @param user      脚本上传用户
+     * @param fileEntry 脚本内容明细
+     * @throws IOException io异常
+     */
     public void saveFile(User user, FileEntry fileEntry) throws IOException {
         if (user == null || fileEntry == null) {
             return;
         }
         if (fileEntry.getFileType() == FileType.DIR) {
             File needCreateDir = new File(getUserScriptsDir(user), fileEntry.getPath());
-            boolean makeDirResult = needCreateDir.mkdirs();
-            LOG.info("Create file result, {}:{}", needCreateDir.getPath(), makeDirResult);
+            Files.createDirectories(Paths.get(needCreateDir.getPath()));
         } else {
-            File thisScriptBaseDir = new File(scriptBaseDir, user.getUserId());
-            File needCreateFile = new File(thisScriptBaseDir, fileEntry.getPath());
+            File needCreateFile = new File(getUserScriptsDir(user), fileEntry.getPath());
             try (ByteArrayInputStream inputStream = new ByteArrayInputStream(fileEntry.getContentBytes())) {
                 FileUtils.copyInputStreamToFile(inputStream, needCreateFile);
             }
         }
     }
 
-    public void prepare(User user) {
+    /**
+     * 创建用户脚本路径
+     *
+     * @param user 需要创建脚本路径的用户
+     */
+    public void prepareUserScriptBaseDir(User user) {
         if (user == null) {
             return;
         }
@@ -327,14 +291,11 @@ public class NfsFileEntryService {
         LOG.info("Create file result, {}:{}", userScriptDir.getPath(), makeDirResult);
     }
 
-    public void addFolder(User user, String path, String child) {
+    public void addFolder(User user, String path, String child) throws IOException {
         if (user == null) {
             return;
         }
-        File addPathDir = new File(getUserScriptsDir(user), path);
-        File addFoldDir = new File(addPathDir, child);
-        boolean makeDirResult = addFoldDir.mkdirs();
-        LOG.info("Create file result, {}:{}", addFoldDir.getPath(), makeDirResult);
+        Files.createDirectories(Paths.get(getUserScriptsDir(user).getPath(), path, child));
     }
 
     /**
@@ -359,15 +320,6 @@ public class NfsFileEntryService {
         return scriptHandlerFactory.getHandler(key);
     }
 
-    public void deleteFile(User user, String path, String[] files) {
-        if (user == null || files == null) {
-            return;
-        }
-        for (String file : files) {
-            deleteFile(user, path, file);
-        }
-    }
-
     /**
      * Check file existence.
      *
@@ -379,79 +331,79 @@ public class NfsFileEntryService {
         return getSpecifyScript(user, path) != null;
     }
 
-    public void deleteFile(User user, String path, String file) {
-        if (user == null || StringUtils.isEmpty(file)) {
+    /**
+     * 删除指定用户脚本管理路径下面的文件
+     *
+     * @param user      用户
+     * @param path      文件路径
+     * @param fileNames 文件绝对路径列表
+     * @throws IOException io异常
+     */
+    public void deleteFile(User user, String path, String[] fileNames) throws IOException {
+        if (user == null) {
+            LOG.error("Can not find user for privilege.");
             return;
         }
-        File userScriptDir = new File(scriptBaseDir, user.getUserId());
-        File addPathDir = new File(userScriptDir, path);
-        File addFoldDir = new File(addPathDir, file);
-        boolean makeDirResult = addFoldDir.delete();
-        LOG.info("Delete file result, {}:{}", addFoldDir.getPath(), makeDirResult);
+        List<File> files = new ArrayList<>();
+        for (String fileName : fileNames) {
+            File userScriptsDir = getUserScriptsDir(user, path);
+            files.add(new File(userScriptsDir, fileName));
+        }
+        deleteFile(files);
     }
 
-    public void deleteFile(User user, String path) {
-        if (user == null || StringUtils.isEmpty(path)) {
-            return;
-        }
-        File userScriptDir = new File(scriptBaseDir, user.getUserId());
-        File addPathDir = new File(userScriptDir, path);
-        File[] files = addPathDir.listFiles();
-        if (files == null) {
+    /**
+     * 删除指定用户脚本管理路径下面的文件
+     *
+     * @param files 文件绝对路径列表
+     * @throws IOException io异常
+     */
+    private void deleteFile(List<File> files) throws IOException {
+        if (files == null || files.isEmpty()) {
             return;
         }
         for (File file : files) {
-            deleteFile(user, path, file.getPath());
+            if (!file.exists()) {
+                continue;
+            }
+            if (file.isFile()) {
+                Files.deleteIfExists(Paths.get(file.getPath()));
+                continue;
+            }
+            File[] childFiles = file.listFiles();
+            if (childFiles == null || childFiles.length == 0) {
+                Files.deleteIfExists(Paths.get(file.getPath()));
+                continue;
+            }
+            deleteFile(Lists.newArrayList(childFiles));
+            Files.deleteIfExists(Paths.get(file.getPath()));
         }
     }
 
     /**
-     * Create new FileEntry.
+     * 删除指定用户指定路径的文件，如果是文件夹，就递归删除
      *
-     * @param user           user
-     * @param path           base path path
-     * @param fileName       fileName
-     * @param name           name
-     * @param url            url
-     * @param scriptHandler  script handler
-     * @param libAndResource true if lib and resources should be created
-     * @return created file entry. main test file if it's the project creation.
+     * @param user 需要删除文件的用户
+     * @param path 需要删除的文件路径
+     * @throws IOException io异常
      */
-    public FileEntry prepareNewEntry(User user, String path, String fileName, String name, String url,
-                                     ScriptHandler scriptHandler, boolean libAndResource, String options) {
-        if (scriptHandler instanceof ProjectHandler) {
-            String scriptContent = loadTemplate(user, getScriptHandler("groovy"), url, name, options);
-            scriptHandler.prepareScriptEnv(user, path, fileName, name, url, libAndResource, scriptContent);
-            return null;
+    public void deleteFile(User user, String path) throws IOException {
+        if (user == null || StringUtils.isEmpty(path)) {
+            return;
         }
-        path = PathUtils.join(path, fileName);
-        FileEntry fileEntry = new FileEntry();
-        fileEntry.setPath(path);
-        fileEntry.setContent(loadTemplate(user, scriptHandler, url, name, options));
-        fileEntry.setProperties(buildMap("targetHosts", UrlUtils.getHost(url)));
-        return fileEntry;
-    }
-
-    /**
-     * Load freemarker template for quick test.
-     *
-     * @param user    user
-     * @param handler handler
-     * @param url     url
-     * @param name    name
-     * @return generated test script
-     */
-    public String loadTemplate(User user, ScriptHandler handler, String url, String name,
-                               String options) {
-        Map<String, Object> map = newHashMap();
-        map.put("url", url);
-        map.put("userName", user.getUserName());
-        map.put("name", name);
-        map.put("options", options);
-        return handler.getScriptTemplate(map);
-    }
-
-    private void throwException() throws IOException {
-        throw new IOException("File control failed.");
+        File addPathFile = new File(getUserScriptsDir(user), path);
+        if (!addPathFile.exists()) {
+            return;
+        }
+        if (addPathFile.isFile()) {
+            Files.deleteIfExists(Paths.get(addPathFile.getPath()));
+        }
+        File[] childFiles = addPathFile.listFiles();
+        if (childFiles == null || childFiles.length == 0) {
+            Files.deleteIfExists(Paths.get(addPathFile.getPath()));
+            return;
+        }
+        deleteFile(Lists.newArrayList(childFiles));
+        Files.deleteIfExists(Paths.get(addPathFile.getPath()));
     }
 }

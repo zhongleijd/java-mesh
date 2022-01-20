@@ -140,8 +140,7 @@ public abstract class ScriptHandler implements ControllerConstants {
                             PropertiesWrapper properties,
                             ProcessingResultPrintStream processingResult) throws IOException {
         prepareDefaultFile(distDir, properties);
-        String scriptBasePath = scriptEntry.getPath();
-        List<FileEntry> fileEntries = nfsFileEntryService.getUserScriptAllFiles(user, new File(scriptBasePath).getParent());
+        List<FileEntry> fileEntries = getLibAndResourceEntries(user, scriptEntry, 1L);
         if (scriptEntry.getRevision() != 0) {
             fileEntries.add(scriptEntry);
         }
@@ -154,7 +153,7 @@ public abstract class ScriptHandler implements ControllerConstants {
             }
             File toDir = new File(distDir, calcDistSubPath(basePath, each));
             processingResult.printf("%s is being written.\n", each.getPath());
-            LOGGER.info("{} is being written in {} for test {}", new Object[]{each.getPath(), toDir, testCaseId});
+            LOGGER.info("{} is being written in {} for test {}", each.getPath(), toDir, testCaseId);
             nfsFileEntryService.writeContentTo(each, toDir);
         }
         processingResult.setSuccess(true);

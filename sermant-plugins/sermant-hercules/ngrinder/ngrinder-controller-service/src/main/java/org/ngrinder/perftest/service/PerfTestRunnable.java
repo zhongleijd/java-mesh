@@ -265,7 +265,9 @@ public class PerfTestRunnable implements ControllerConstants {
             runTestOn(perfTest, grinderProperties, checkCancellation(singleConsole));
         } catch (SingleConsoleCancellationException ex) {
             // In case of error, mark the occurs error on perftest.
-            doCancel(perfTest, singleConsole);
+            if (singleConsole != null) {
+                doCancel(perfTest, singleConsole);
+            }
             notifyFinish(perfTest, StopReason.CANCEL_BY_USER);
         } catch (Exception e) {
             // In case of error, mark the occurs error on perftest.
