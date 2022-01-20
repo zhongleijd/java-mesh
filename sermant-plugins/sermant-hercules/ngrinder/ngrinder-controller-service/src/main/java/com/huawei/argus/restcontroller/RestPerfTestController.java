@@ -18,7 +18,6 @@
 
 package com.huawei.argus.restcontroller;
 
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.huawei.argus.testreport.service.impl.TpsCalculateService;
 import net.grinder.util.LogCompressUtils;
@@ -29,7 +28,6 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.lang.mutable.MutableInt;
 import org.ngrinder.agent.service.AgentManagerService;
-import org.ngrinder.common.constant.ControllerConstants;
 import org.ngrinder.common.constants.GrinderConstants;
 import org.ngrinder.common.controller.RestAPI;
 import org.ngrinder.common.util.FileDownloadUtils;
@@ -38,19 +36,12 @@ import org.ngrinder.infra.logger.CoreLogger;
 import org.ngrinder.infra.spring.RemainedPath;
 import org.ngrinder.model.MonitoringHost;
 import org.ngrinder.model.PerfTest;
-import org.ngrinder.model.RampUp;
 import org.ngrinder.model.Role;
 import org.ngrinder.model.Status;
 import org.ngrinder.model.User;
 import org.ngrinder.perftest.service.AgentManager;
 import org.ngrinder.perftest.service.PerfTestService;
 import org.ngrinder.perftest.service.TagService;
-import org.ngrinder.region.service.RegionService;
-import org.ngrinder.script.handler.ScriptHandlerFactory;
-import org.ngrinder.script.model.FileCategory;
-import org.ngrinder.script.model.FileEntry;
-import org.ngrinder.script.service.NfsFileEntryService;
-import org.ngrinder.user.service.UserService;
 import org.python.google.common.collect.Maps;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -81,11 +72,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TimeZone;
-import java.util.stream.Collectors;
 
 import static com.google.common.collect.Lists.newArrayList;
-import static org.apache.commons.lang.StringUtils.trimToEmpty;
 import static org.ngrinder.common.util.CollectionUtils.buildMap;
 import static org.ngrinder.common.util.CollectionUtils.newHashMap;
 import static org.ngrinder.common.util.ExceptionUtils.processException;
@@ -93,18 +81,14 @@ import static org.ngrinder.common.util.ObjectUtils.defaultIfNull;
 import static org.ngrinder.common.util.Preconditions.checkArgument;
 import static org.ngrinder.common.util.Preconditions.checkNotEmpty;
 import static org.ngrinder.common.util.Preconditions.checkNotNull;
-import static org.ngrinder.common.util.Preconditions.checkNull;
 import static org.ngrinder.common.util.Preconditions.checkState;
 
 @RestController
-@RequestMapping("/rest/perftest")
+@RequestMapping("/rest/api/")
 public class RestPerfTestController extends RestBaseController {
 
     @Autowired
     private PerfTestService perfTestService;
-
-    @Autowired
-    private NfsFileEntryService fileEntryService;
 
     @Autowired
     private AgentManager agentManager;
@@ -114,15 +98,6 @@ public class RestPerfTestController extends RestBaseController {
 
     @Autowired
     private TagService tagService;
-
-    @Autowired
-    private ScriptHandlerFactory scriptHandlerFactory;
-
-    @Autowired
-    private RegionService regionService;
-
-    @Autowired
-    private UserService userService;
 
     /**
      * Get the perf test lists.
@@ -134,7 +109,7 @@ public class RestPerfTestController extends RestBaseController {
      * @param pageable    page
      * @return perftest/list
      */
-    @RequestMapping(value = {"/list"}, method = RequestMethod.GET)
+    @RequestMapping(value = {"/perftests"}, method = RequestMethod.GET)
     public Page<PerfTest> getAll(User user, @RequestParam(required = false) String query,
                                  @RequestParam(required = false) String tag, @RequestParam(required = false) String queryFilter,
                                  @PageableDefault(page = 0, size = 10) Pageable pageable,
@@ -159,21 +134,10 @@ public class RestPerfTestController extends RestBaseController {
      * @param query 查询关键字
      * @return 获取所有标签
      */
-    @RequestMapping({"/allTags"})
+    @RequestMapping(value = {"/tags"}, method = RequestMethod.GET)
     public List<String> getAllTags(User user, @RequestParam(required = false) String query) {
         List<String> allTags = tagService.getAllTagStringsByKeywords(user, query);
         return allTags == null ? Collections.emptyList() : allTags;
-    }
-
-    /**
-     * Open the new perf test creation form.
-     *
-     * @param user user
-     * @return "perftest/detail"
-     */
-    @RequestMapping("/new")
-    public JSONObject openForm(User user) {
-        return getOne(user, null);
     }
 
     /**
@@ -183,28 +147,9 @@ public class RestPerfTestController extends RestBaseController {
      * @param id   perf test id
      * @return perftest/detail
      */
-    @RequestMapping(value = "/perfTest/{id}", method = RequestMethod.GET)
-    public JSONObject getOne(User user, @PathVariable Long id) {
-        PerfTest test = null;
-        if (id != null) {
-            test = getOneWithPermissionCheck(user, id, true);
-        }
-        if (test == null) {
-            test = new PerfTest(user);
-            test.init();
-        }
-        JSONObject modelInfos = new JSONObject();
-        modelInfos.put(PARAM_TEST, test);
-        // Retrieve the agent count map based on create user, if the test is
-        // created by the others.
-        user = test.getCreatedUser() != null ? test.getCreatedUser() : user;
-
-        Map<String, MutableInt> agentCountMap = agentManagerService.getAvailableAgentCountMap(user);
-        modelInfos.put(PARAM_REGION_AGENT_COUNT_MAP, agentCountMap);
-        modelInfos.put(PARAM_REGION_LIST, regionService.getAllVisibleRegionNames());
-        modelInfos.put(PARAM_PROCESS_THREAD_POLICY_SCRIPT, perfTestService.getProcessAndThreadPolicyScript());
-        addDefaultAttributeOnModel(modelInfos);
-        return modelInfos;
+    @RequestMapping(value = "/perftest/{id}", method = RequestMethod.GET)
+    public PerfTest getOne(User user, @PathVariable Long id) {
+        return getOneWithPermissionCheck(user, id, true);
     }
 
     /**
@@ -224,43 +169,18 @@ public class RestPerfTestController extends RestBaseController {
     }
 
     /**
-     * Add the various default configuration values on the model.
-     *
-     * @param modelInfos model to which put the default values
-     */
-    public void addDefaultAttributeOnModel(Map<String, Object> modelInfos) {
-        modelInfos.put(PARAM_AVAILABLE_RAMP_UP_TYPE, RampUp.values());
-        modelInfos.put(PARAM_MAX_VUSER_PER_AGENT, agentManager.getMaxVuserPerAgent());
-        modelInfos.put(PARAM_MAX_RUN_COUNT, agentManager.getMaxRunCount());
-        if (getConfig().isSecurityEnabled()) {
-            modelInfos.put(PARAM_SECURITY_LEVEL, getConfig().getSecurityLevel());
-        }
-        modelInfos.put(PARAM_MAX_RUN_HOUR, agentManager.getMaxRunHour());
-        modelInfos.put(PARAM_SAFE_FILE_DISTRIBUTION,
-            getConfig().getControllerProperties().getPropertyBoolean(ControllerConstants.PROP_CONTROLLER_SAFE_DIST));
-        String timeZone = getConfig().getTimezone();
-        int offset;
-        if (StringUtils.isNotBlank(timeZone)) {
-            offset = TimeZone.getTimeZone(timeZone).getOffset(System.currentTimeMillis());
-        } else {
-            offset = TimeZone.getDefault().getOffset(System.currentTimeMillis());
-        }
-        modelInfos.put(PARAM_TIMEZONE_OFFSET, offset);
-    }
-
-    /**
      * Create a new test or cloneTo a current test.
      *
      * @param user     user
      * @param perfTest {@link PerfTest}
      * @return redirect:/perftest/list
      */
-    @RequestMapping(value = "/create", method = RequestMethod.POST)
+    @RequestMapping(value = "/create/perftest", method = RequestMethod.POST)
     public PerfTest saveOne(User user, @RequestBody PerfTest perfTest) {
         validate(user, null, perfTest);
         // Point to the head revision
         perfTest.setTestName(StringUtils.trimToEmpty(perfTest.getTestName()));
-        perfTest.setScriptRevision(-1L);
+        perfTest.setScriptRevision(1L);
         Set<MonitoringHost> monitoringHosts = perfTest.getMonitoringHosts();
         if (monitoringHosts != null && !monitoringHosts.isEmpty()) {
             for (MonitoringHost monitoringHost : monitoringHosts) {
@@ -322,7 +242,7 @@ public class RestPerfTestController extends RestBaseController {
      * @param tagString   tagString
      * @return JSON
      */
-    @RequestMapping(value = "/{id}/leave_comment", method = RequestMethod.POST)
+    @RequestMapping(value = "/perftest/{id}/leave_comment", method = RequestMethod.POST)
     @ResponseBody
     public JSONObject leaveComment(User user, @PathVariable("id") Long id, @RequestParam("testComment") String testComment,
                                    @RequestParam(value = "tagString", required = false) String tagString) {
@@ -330,8 +250,16 @@ public class RestPerfTestController extends RestBaseController {
         return returnSuccess();
     }
 
-    @RequestMapping(value = "/leave_comment", method = RequestMethod.POST)
-    public JSONObject updateLeaveComment(User user, @RequestParam Long id, @RequestParam("testComment") String testComment) {
+    /**
+     * UPDATE the comment on the perf test.
+     *
+     * @param id          testId
+     * @param user        user
+     * @param testComment test comment
+     * @return JSON
+     */
+    @RequestMapping(value = "/perftest/{id}/leave_comment", method = RequestMethod.PUT)
+    public JSONObject updateLeaveComment(User user, @PathVariable Long id, @RequestParam("testComment") String testComment) {
         PerfTest perfTest = perfTestService.getOne(user, id);
         perfTestService.addCommentOn(user, id, testComment, perfTest.getTagString());
         return returnSuccess();
@@ -377,7 +305,7 @@ public class RestPerfTestController extends RestBaseController {
      * @return success json messages if succeeded.
      */
     @RestAPI
-    @RequestMapping(value = "/api", method = RequestMethod.DELETE)
+    @RequestMapping(value = "/perftest", method = RequestMethod.DELETE)
     public HttpEntity<JSONObject> delete(User user, @RequestParam(value = "ids", defaultValue = "") String ids) {
         for (String idStr : StringUtils.split(ids, ",")) {
             perfTestService.delete(user, NumberUtils.toLong(idStr, 0));
@@ -386,7 +314,7 @@ public class RestPerfTestController extends RestBaseController {
     }
 
     @RestAPI
-    @RequestMapping(value = "/deleteReportFile", method = RequestMethod.DELETE)
+    @RequestMapping(value = "/report", method = RequestMethod.DELETE)
     public HttpEntity<JSONObject> deleteReportFile(User user, @RequestParam(value = "ids", defaultValue = "") String ids) {
         for (String idStr : StringUtils.split(ids, ",")) {
             perfTestService.deleteReportFile(user, NumberUtils.toLong(idStr, 0));
@@ -402,30 +330,13 @@ public class RestPerfTestController extends RestBaseController {
      * @return success json if succeeded.
      */
     @RestAPI
-    @RequestMapping(value = "/api/stop", method = RequestMethod.PUT)
+    @RequestMapping(value = "/stop/perftest", method = RequestMethod.PUT)
     public HttpEntity<JSONObject> stop(User user, @RequestParam(value = "ids", defaultValue = "") String ids) {
         for (String idStr : StringUtils.split(ids, ",")) {
             perfTestService.stop(user, NumberUtils.toLong(idStr, 0));
         }
         return successJsonHttpEntity();
     }
-
-    /**
-     * Filter out please_modify_this.com from hosts string.
-     *
-     * @param originalString original string
-     * @return filtered string
-     */
-    private String filterHostString(String originalString) {
-        List<String> hosts = newArrayList();
-        for (String each : StringUtils.split(StringUtils.trimToEmpty(originalString), ",")) {
-            if (!each.contains("please_modify_this.com")) {
-                hosts.add(each);
-            }
-        }
-        return StringUtils.join(hosts, ",");
-    }
-
 
     private JSONObject getPerfGraphData(Long id, String[] dataTypes, boolean onlyTotal, int imgWidth) {
         final PerfTest test = perfTestService.getOne(id);
@@ -450,7 +361,7 @@ public class RestPerfTestController extends RestBaseController {
      * @param id   test id
      * @return perftest/running
      */
-    @RequestMapping(value = "{id}/running_div")
+    @RequestMapping(value = "/perftest/{id}/running_div")
     public JSONObject getReportSection(User user, @PathVariable long id) {
         PerfTest test = getOneWithPermissionCheck(user, id, false);
         JSONObject modelInfos = new JSONObject();
@@ -742,79 +653,7 @@ public class RestPerfTestController extends RestBaseController {
             getStatus(perfTests)));
     }
 
-    /**
-     * Get all available scripts in JSON format for the current factual user.
-     *
-     * @param user    user
-     * @param ownerId owner id
-     * @return JSON containing script's list.
-     */
-    @RequestMapping("/api/script")
-    public HttpEntity<JSONArray> getScripts(User user, @RequestParam(value = "ownerId", required = false) String ownerId) throws IOException {
-        JSONArray data = new JSONArray();
-        List<FileEntry> scripts = fileEntryService.getUserScriptAllFiles(user, "/")
-            .stream()
-            .filter(input -> input != null && input.getFileType().getFileCategory() == FileCategory.SCRIPT)
-            .collect(Collectors.toList());
-        data.addAll(scripts);
-        return toHttpEntity(data);
-    }
 
-
-    /**
-     * Get resources and lib file list from the same folder with the given script path.
-     *
-     * @param user       user
-     * @param scriptPath script path
-     * @param ownerId    ownerId
-     * @return json string representing resources and libs.
-     */
-    @RequestMapping("/api/resource")
-    public HttpEntity<JSONObject> getResources(User user, @RequestParam String scriptPath,
-                                               @RequestParam(required = false) String ownerId) {
-        if (user.getRole() == Role.ADMIN && StringUtils.isNotBlank(ownerId)) {
-            user = userService.getOne(ownerId);
-        }
-        FileEntry fileEntry = null;
-        try {
-            fileEntry = fileEntryService.getSpecifyScript(scriptPath);
-        } catch (IOException e) {
-            return toHttpEntity(returnError());
-        }
-        String targetHosts = "";
-        List<String> fileStringList = newArrayList();
-        if (fileEntry != null) {
-            List<FileEntry> fileList = null;
-            try {
-                fileList = fileEntryService.getScriptHandler(fileEntry).getLibAndResourceEntries(user, fileEntry, -1L);
-            } catch (IOException e) {
-                return toHttpEntity(returnError());
-            }
-            for (FileEntry each : fileList) {
-                fileStringList.add(each.getPath());
-            }
-            targetHosts = filterHostString(fileEntry.getProperties().get("targetHosts"));
-        }
-        JSONObject resourceInfo = new JSONObject();
-        resourceInfo.put("targetHosts", trimToEmpty(targetHosts));
-        resourceInfo.put("resources", fileStringList);
-        return toHttpEntity(resourceInfo);
-    }
-
-
-    /**
-     * Get the status of the given perf test.
-     *
-     * @param user user
-     * @param id   perftest id
-     * @return JSON message containing perf test status
-     */
-    @RestAPI
-    @RequestMapping("/api/{id}/status")
-    public HttpEntity<String> getStatus(User user, @PathVariable("id") Long id) {
-        List<PerfTest> perfTests = perfTestService.getAll(user, new Long[]{id});
-        return toJsonHttpEntity(buildMap("status", getStatus(perfTests)));
-    }
 
     /**
      * Get the logs of the given perf test.
@@ -938,26 +777,6 @@ public class RestPerfTestController extends RestBaseController {
     public HttpEntity<String> getApiOne(User user, @PathVariable("id") Long id) {
         PerfTest test = checkNotNull(getOneWithPermissionCheck(user, id, false), "PerfTest %s does not exists", id);
         return toJsonHttpEntity(test);
-    }
-
-    /**
-     * Create the given perf test.
-     *
-     * @param user     user
-     * @param perfTest perf test
-     * @return json message containing test info.
-     */
-    @RestAPI
-    @RequestMapping(value = {"/api/", "/api"}, method = RequestMethod.POST)
-    public HttpEntity<String> create(User user, PerfTest perfTest) {
-        checkNull(perfTest.getId(), "id should be null");
-        // Make the vuser count optional.
-        if (perfTest.getVuserPerAgent() == null && perfTest.getThreads() != null && perfTest.getProcesses() != null) {
-            perfTest.setVuserPerAgent(perfTest.getThreads() * perfTest.getProcesses());
-        }
-        validate(user, null, perfTest);
-        PerfTest savePerfTest = perfTestService.save(user, perfTest);
-        return toJsonHttpEntity(savePerfTest);
     }
 
     /**

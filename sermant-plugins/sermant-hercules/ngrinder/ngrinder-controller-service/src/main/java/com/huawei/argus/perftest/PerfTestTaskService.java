@@ -83,7 +83,7 @@ public class PerfTestTaskService implements IPerfTestTaskService {
     @Transactional
     public PerfTest save(User user, PerfTest perfTest) {
         try {
-            perfTest.setScriptName(fileEntryService.getSpecifyScript(user, perfTest).getPathInShort());
+            perfTest.setScriptName(fileEntryService.getSpecifyScript(user, perfTest).getPath());
         } catch (IOException e) {
             LOGGER.error("The script for test is not exist:{}", perfTest.getTestName());
             return null;

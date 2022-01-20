@@ -75,17 +75,17 @@ public class InfluxDBUtil {
     public void createRetentionPolicy(){
         String command = String.format("CREATE RETENTION POLICY \"%s\" ON \"%s\" DURATION %s REPLICATION %s DEFAULT",
                 "defalut", database, "30d", 1);
-        this.query(command);
+        query(command);
     }
 
     public static InfluxDBUtil getInstance(){
         if (Instance == null){
-            //synchronized (InfluxDBUtil.class){
-                if (Instance == null){
+            synchronized (InfluxDBUtil.class) {
+                if (Instance == null) {
                     Instance = new InfluxDBUtil();
                     Instance.createRetentionPolicy();
                 }
-            //}
+            }
         }
         return Instance;
     }
