@@ -17,6 +17,7 @@ import freemarker.template.Configuration;
 import freemarker.template.DefaultObjectWrapper;
 import freemarker.template.Template;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang.StringUtils;
 import org.ngrinder.common.constant.ControllerConstants;
 import org.ngrinder.common.util.FileUtils;
 import org.ngrinder.common.util.PathUtils;
@@ -204,8 +205,19 @@ public abstract class ScriptHandler implements ControllerConstants {
      */
     protected String calcDistSubPath(String basePath, FileEntry fileEntry) {
         String path = FilenameUtils.getPath(fileEntry.getPath());
-        path = path.substring(basePath.length());
-        return path;
+        if (StringUtils.isEmpty(basePath)) {
+            return path;
+        }
+        if (StringUtils.isEmpty(path)) {
+            return "";
+        }
+        if (!path.startsWith(File.separator)) {
+            path = File.separator + path;
+        }
+        if (path.length() <= basePath.length()) {
+            return "";
+        }
+        return path.substring(basePath.length());
     }
 
     /**
@@ -257,7 +269,14 @@ public abstract class ScriptHandler implements ControllerConstants {
      * @return base path
      */
     public String getBasePath(String path) {
-        return FilenameUtils.getPath(path);
+        String parentPath = FilenameUtils.getPath(path);
+        if (!parentPath.startsWith(File.separator)) {
+            parentPath = File.separator + parentPath;
+        }
+        if (parentPath.endsWith(File.separator)) {
+            parentPath = parentPath.substring(0, parentPath.length() - 1);
+        }
+        return parentPath;
     }
 
     /**

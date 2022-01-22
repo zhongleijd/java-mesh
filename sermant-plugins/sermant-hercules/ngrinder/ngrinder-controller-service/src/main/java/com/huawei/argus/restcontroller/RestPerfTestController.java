@@ -175,12 +175,14 @@ public class RestPerfTestController extends RestBaseController {
      * @param perfTest {@link PerfTest}
      * @return redirect:/perftest/list
      */
-    @RequestMapping(value = "/create/perftest", method = RequestMethod.POST)
+    @RequestMapping(value = "/perftest", method = RequestMethod.POST)
     public PerfTest saveOne(User user, @RequestBody PerfTest perfTest) {
         validate(user, null, perfTest);
         // Point to the head revision
         perfTest.setTestName(StringUtils.trimToEmpty(perfTest.getTestName()));
         perfTest.setScriptRevision(1L);
+        perfTest.setCreatedUser(user);
+        perfTest.setUserId(user.getUserId());
         Set<MonitoringHost> monitoringHosts = perfTest.getMonitoringHosts();
         if (monitoringHosts != null && !monitoringHosts.isEmpty()) {
             for (MonitoringHost monitoringHost : monitoringHosts) {

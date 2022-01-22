@@ -205,8 +205,15 @@ public class NfsFileEntryService {
      * @return FileEntry对象
      */
     private FileEntry buildFileEntry(File file, User user) throws IOException {
-        if (file == null || !file.exists() || file.isDirectory()) {
-            return null;
+        if (file == null) {
+            throw new IOException("The file not exist.");
+        }
+        if (!file.exists()) {
+            throw new IOException("The file not exist:" + file);
+
+        }
+        if (file.isDirectory()) {
+            throw new IOException("The file is directory:" + file);
         }
         FileEntry script = new FileEntry();
         script.setPath(file.getPath().replace(getUserScriptsDir(user).getPath(), ""));
@@ -227,6 +234,7 @@ public class NfsFileEntryService {
             script.setContent((new String(contentBytes, autoDetectedEncoding)));
             script.setEncoding(autoDetectedEncoding);
         }
+        script.setCreatedUser(user);
         script.setContentBytes(contentBytes);
         script.setDescription("");
         script.setRevision(1);

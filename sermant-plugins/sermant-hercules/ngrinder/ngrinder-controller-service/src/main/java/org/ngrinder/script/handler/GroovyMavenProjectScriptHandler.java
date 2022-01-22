@@ -29,6 +29,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 
@@ -57,10 +58,21 @@ public class GroovyMavenProjectScriptHandler extends GroovyScriptHandler impleme
         super(key, extension, title, codeMirrorKey);
     }
 
-    private static final String RESOURCES = "/src/main/resources/";
-    private static final String JAVA = "/src/main/java/";
-    private static final String GROOVY = "/src/main/groovy/";
-    private static final String LIB = "/lib/";
+    private static final String RESOURCES = buildPathString("src", "main", "resources");
+    private static final String JAVA = buildPathString("src", "main", "java");
+    private static final String GROOVY = buildPathString("src", "main", "groovy");
+    private static final String LIB = buildPathString("lib");
+
+    private static String buildPathString(String start, String... pathPartitions) {
+        String path = Paths.get(start, pathPartitions).toString();
+        if (!path.startsWith(File.separator)) {
+            path = File.separator + path;
+        }
+        if (path.endsWith(File.separator)) {
+            path = path.substring(0, path.length() - 1);
+        }
+        return path;
+    }
 
     @Override
     public boolean canHandle(FileEntry fileEntry) {
@@ -78,8 +90,8 @@ public class GroovyMavenProjectScriptHandler extends GroovyScriptHandler impleme
         }
 
         try {
-            getNfsFileEntryService().getSpecifyScript(fileEntry.getCreatedUser(), getBasePath(path) + "/pom.xml");
-            return true;
+            FileEntry pomFileEntry = getNfsFileEntryService().getSpecifyScript(fileEntry.getCreatedUser(), getBasePath(path) + "/pom.xml");
+            return pomFileEntry != null;
         } catch (IOException e) {
             return false;
         }
@@ -128,7 +140,7 @@ public class GroovyMavenProjectScriptHandler extends GroovyScriptHandler impleme
                     fileList.add(eachFileEntry);
                 }
             }
-            fileList.add(getNfsFileEntryService().getSpecifyScript(user, getBasePath(basePath) + "/pom.xml"));
+            fileList.add(getNfsFileEntryService().getSpecifyScript(user, basePath + File.separator + "pom.xml"));
         } catch (IOException e) {
             LOGGER.error("Query maven script fail.");
         }
@@ -140,11 +152,11 @@ public class GroovyMavenProjectScriptHandler extends GroovyScriptHandler impleme
     protected String calcDistSubPath(String basePath, FileEntry each) {
         String calcDistSubPath = super.calcDistSubPath(basePath, each);
         if (calcDistSubPath.startsWith(JAVA)) {
-            return calcDistSubPath.substring(JAVA.length() - 1);
+            return calcDistSubPath.substring(JAVA.length());
         } else if (calcDistSubPath.startsWith(GROOVY)) {
-            return calcDistSubPath.substring(GROOVY.length() - 1);
+            return calcDistSubPath.substring(GROOVY.length());
         } else if (calcDistSubPath.startsWith(RESOURCES)) {
-            return calcDistSubPath.substring(RESOURCES.length() - 1);
+            return calcDistSubPath.substring(RESOURCES.length());
         }
         return calcDistSubPath;
     }
@@ -169,11 +181,11 @@ public class GroovyMavenProjectScriptHandler extends GroovyScriptHandler impleme
             LOGGER.info("Dependencies in {} is copied into {}/lib folder", pomPathInSVN, distDir.getAbsolutePath());
         } else {
             processingResult.printf("\nDependencies copy in %s is failed.\n", pomPathInSVN);
-            LOGGER.info("Dependencies copy in {} is failed.", pomPathInSVN);
+            LOGGER.error("Dependencies copy in {} is failed.", pomPathInSVN);
         }
         // Then it's not necessary to include pom.xml anymore.
         FileUtils.deleteQuietly(new File(distDir, "pom.xml"));
-        processingResult.setSuccess(result == 0);
+        processingResult.setSuccess(success);
     }
 
     @Override
@@ -253,19 +265,29 @@ public class GroovyMavenProjectScriptHandler extends GroovyScriptHandler impleme
      */
     @Override
     public String getBasePath(String path) {
+        String parentPath;
         if (path.contains(JAVA)) {
-            return path.substring(0, path.lastIndexOf(JAVA));
+            parentPath = path.substring(0, path.lastIndexOf(JAVA));
         } else {
-            return path.substring(0, path.lastIndexOf(GROOVY));
+            parentPath = path.substring(0, path.lastIndexOf(GROOVY));
         }
+        if (!parentPath.startsWith(File.separator)) {
+            parentPath = File.separator + parentPath;
+        }
+        if (parentPath.endsWith(File.separator)) {
+            parentPath = parentPath.substring(0, parentPath.length() - 1);
+        }
+        return parentPath;
     }
 
     @Override
     public String getScriptExecutePath(String path) {
         if (path.contains(JAVA)) {
             return path.substring(path.lastIndexOf(JAVA) + JAVA.length());
-        } else {
+        } else if (path.contains(GROOVY)) {
             return path.substring(path.lastIndexOf(GROOVY) + GROOVY.length());
+        } else {
+            return "";
         }
     }
 

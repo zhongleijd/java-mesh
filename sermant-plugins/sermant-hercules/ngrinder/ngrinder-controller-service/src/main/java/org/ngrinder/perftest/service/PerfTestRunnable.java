@@ -86,7 +86,6 @@ public class PerfTestRunnable implements ControllerConstants {
 
     private static final Logger LOG = LoggerFactory.getLogger(PerfTestRunnable.class);
 
-    @SuppressWarnings("SpringJavaAutowiringInspection")
     @Autowired
     private PerfTestService perfTestService;
 
@@ -186,6 +185,7 @@ public class PerfTestRunnable implements ControllerConstants {
             return;
         }
 
+        // 再次判断任务是否是ready状态
         doTest(runCandidate);
     }
 
@@ -541,19 +541,19 @@ public class PerfTestRunnable implements ControllerConstants {
             && singleConsoleInUse.isCurrentRunningTimeOverDuration(perfTest.getDuration())) {
             LOG.debug(
                 "Test {} is ready to finish. Current : {}, Planned : {}",
-                new Object[]{perfTest.getTestIdentifier(), singleConsoleInUse.getCurrentRunningTime(),
-                    perfTest.getDuration()});
+                perfTest.getTestIdentifier(), singleConsoleInUse.getCurrentRunningTime(),
+                perfTest.getDuration());
             return true;
         } else if (perfTest.isThresholdRunCount()
             && singleConsoleInUse.getCurrentExecutionCount() >= perfTest.getTotalRunCount()) {
             LOG.debug("Test {} is ready to finish. Current : {}, Planned : {}",
-                new Object[]{perfTest.getTestIdentifier(), singleConsoleInUse.getCurrentExecutionCount(),
-                    perfTest.getTotalRunCount()});
+                perfTest.getTestIdentifier(), singleConsoleInUse.getCurrentExecutionCount(),
+                perfTest.getTotalRunCount());
             return true;
         } else if (singleConsoleInUse instanceof NullSingleConsole) {
             LOG.debug("Test {} is ready to finish. Current : {}, Planned : {}",
-                new Object[]{perfTest.getTestIdentifier(), singleConsoleInUse.getCurrentExecutionCount(),
-                    perfTest.getTotalRunCount()});
+                perfTest.getTestIdentifier(), singleConsoleInUse.getCurrentExecutionCount(),
+                perfTest.getTotalRunCount());
             return true;
         }
 

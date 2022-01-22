@@ -82,6 +82,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.StringReader;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -331,6 +332,8 @@ public class PerfTestService extends AbstractPerfTestService implements Controll
             LOGGER.error("Save error.");
         }
         attachTags(user, perfTest, perfTest.getTagString());
+        perfTest.setCreatedUser(user);
+        perfTest.setUserId(user.getUserId());
         return save(perfTest);
 
     }
@@ -521,7 +524,9 @@ public class PerfTestService extends AbstractPerfTestService implements Controll
     public PerfTest getNextRunnablePerfTestPerfTestCandidate() {
         List<PerfTest> readyPerfTests = perfTestRepository.findAllByStatusOrderByScheduledTimeAsc(Status.READY);
         List<PerfTest> usersFirstPerfTests = filterCurrentlyRunningTestUsersTest(readyPerfTests);
-        return usersFirstPerfTests.isEmpty() ? null : readyPerfTests.get(0);
+        PerfTest perfTest = readyPerfTests.get(0);
+        perfTest.setScriptName(new File(perfTest.getScriptName()).getPath());
+        return usersFirstPerfTests.isEmpty() ? null : perfTest;
     }
 
     /**
@@ -545,12 +550,9 @@ public class PerfTestService extends AbstractPerfTestService implements Controll
         for (PerfTest each : currentlyRunningTests) {
             currentlyRunningTestOwners.add(each.getCreatedUser());
         }
-        CollectionUtils.filter(perfTestLists, new Predicate() {
-            @Override
-            public boolean evaluate(Object object) {
-                PerfTest perfTest = (PerfTest) object;
-                return !currentlyRunningTestOwners.contains(perfTest.getCreatedUser());
-            }
+        CollectionUtils.filter(perfTestLists, object -> {
+            PerfTest perfTest = (PerfTest) object;
+            return !currentlyRunningTestOwners.contains(perfTest.getCreatedUser());
         });
         return perfTestLists;
     }
@@ -683,12 +685,17 @@ public class PerfTestService extends AbstractPerfTestService implements Controll
             // Use default properties first
             GrinderProperties grinderProperties = new GrinderProperties(config.getHome().getDefaultGrinderProperties());
 
-            User user = perfTest.getCreatedUser();
-
             // Get all files in the script path
             String scriptName = perfTest.getScriptName();
-            FileEntry userDefinedGrinderProperties = fileEntryService.getSpecifyScript(perfTest.getCreatedUser(),
-                FilenameUtils.concat(FilenameUtils.getPath(scriptName), DEFAULT_GRINDER_PROPERTIES));
+            FileEntry userDefinedGrinderProperties;
+            User createdUser = perfTest.getCreatedUser();
+            try {
+                String scriptPath = FilenameUtils.getPath(scriptName);
+                String propertyPath = Paths.get(scriptPath, DEFAULT_GRINDER_PROPERTIES).toString();
+                userDefinedGrinderProperties = fileEntryService.getSpecifyScript(createdUser, propertyPath);
+            } catch (IOException e) {
+                userDefinedGrinderProperties = null;
+            }
             if (!config.isSecurityEnabled() && userDefinedGrinderProperties != null) {
                 // Make the property overridden by user property.
                 GrinderProperties userProperties = new GrinderProperties();
@@ -730,7 +737,7 @@ public class PerfTestService extends AbstractPerfTestService implements Controll
                 grinderProperties.setInt(GRINDER_PROP_PROCESS_INCREMENT, 0);
             }
             grinderProperties.setInt(GRINDER_PROP_REPORT_TO_CONSOLE, 500);
-            grinderProperties.setProperty(GRINDER_PROP_USER, perfTest.getCreatedUser().getUserId());
+            grinderProperties.setProperty(GRINDER_PROP_USER, createdUser.getUserId());
             grinderProperties.setProperty(GRINDER_PROP_JVM_CLASSPATH, getCustomClassPath(perfTest));
             grinderProperties.setInt(GRINDER_PROP_IGNORE_SAMPLE_COUNT, getSafe(perfTest.getIgnoreSampleCount()));
             grinderProperties.setBoolean(GRINDER_PROP_SECURITY, config.isSecurityEnabled());

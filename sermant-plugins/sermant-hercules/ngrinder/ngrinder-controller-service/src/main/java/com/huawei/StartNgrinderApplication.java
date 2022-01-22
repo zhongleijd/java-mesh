@@ -34,6 +34,7 @@ public class StartNgrinderApplication {
     private static final Logger LOGGER = LoggerFactory.getLogger(StartNgrinderApplication.class);
     public static void main(String[] args) throws IOException {
         ConfigurableApplicationContext applicationContext = SpringApplication.run(StartNgrinderApplication.class, args);
+        LOGGER.info("Ngrinder started success.");
     }
 
     @Bean
@@ -59,9 +60,9 @@ public class StartNgrinderApplication {
     public MultipartConfigElement multipartConfigElement() {
         MultipartConfigFactory factory = new MultipartConfigFactory();
         //  单个数据大小
-        factory.setMaxFileSize(DataSize.of(100, DataUnit.KILOBYTES));
+        factory.setMaxFileSize(DataSize.of(100, DataUnit.MEGABYTES));
         /// 总上传数据大小
-        factory.setMaxRequestSize(DataSize.of(100, DataUnit.KILOBYTES));
+        factory.setMaxRequestSize(DataSize.of(100, DataUnit.MEGABYTES));
         return factory.createMultipartConfig();
     }
 }
