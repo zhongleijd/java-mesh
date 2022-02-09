@@ -13,6 +13,7 @@
  */
 package org.ngrinder.script.handler;
 
+import com.huawei.argus.serializer.ZipFileUtil;
 import freemarker.template.Configuration;
 import freemarker.template.DefaultObjectWrapper;
 import freemarker.template.Template;
@@ -34,6 +35,9 @@ import org.springframework.core.io.ClassPathResource;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 
@@ -159,6 +163,13 @@ public abstract class ScriptHandler implements ControllerConstants {
         }
         processingResult.setSuccess(true);
         prepareDistMore(testCaseId, user, scriptEntry, distDir, properties, processingResult);
+
+        // 把dist中的文件都添加到压缩包之后，然后再删除
+        Path zipFilePath = Paths.get(distDir.getParent(), "dist.zip");
+        ZipFileUtil.zipFile(zipFilePath.toString(), distDir);
+        ZipFileUtil.deleteChildFile(distDir);
+        Files.copy(zipFilePath, Paths.get(distDir.getPath(), "dist.zip"));
+        Files.deleteIfExists(zipFilePath);
     }
 
     /**

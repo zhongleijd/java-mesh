@@ -268,7 +268,7 @@
        * @param forceToVerbose true to force verbose logging.
        */
       public synchronized void initLogger(boolean forceToVerbose) {
-          setupLogger((forceToVerbose) || getControllerProperties().getPropertyBoolean(PROP_CONTROLLER_VERBOSE));
+          // setupLogger((forceToVerbose) || getControllerProperties().getPropertyBoolean(PROP_CONTROLLER_VERBOSE));
       }
 
       /**

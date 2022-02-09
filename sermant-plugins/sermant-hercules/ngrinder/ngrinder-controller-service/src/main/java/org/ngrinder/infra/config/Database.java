@@ -86,6 +86,23 @@ public enum Database {
             dataSource.setUsername(databaseProperties.getProperty(DatabaseConfig.PROP_DATABASE_USERNAME));
             dataSource.setPassword(databaseProperties.getProperty(DatabaseConfig.PROP_DATABASE_PASSWORD));
         }
+    },
+
+    /**
+     * gaussdb
+     */
+    gaussdb(org.opengauss.Driver.class, org.hibernate.dialect.PostgreSQL95Dialect.class, "jdbc:opengauss://%s?%s") {
+        @Override
+        protected void setupVariants(BasicDataSource dataSource, PropertiesWrapper databaseProperties) {
+            String databaseOptions = databaseProperties.getProperty(DatabaseConfig.PROP_DATABASE_URL_OPTION);
+            if (StringUtils.isEmpty(databaseOptions)) {
+                databaseOptions = "useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai";
+            }
+            String databaseUrl = databaseProperties.getProperty(DatabaseConfig.PROP_DATABASE_URL);
+            dataSource.setUrl(String.format(getUrlTemplate(), databaseUrl, databaseOptions));
+            dataSource.setUsername(databaseProperties.getProperty(DatabaseConfig.PROP_DATABASE_USERNAME));
+            dataSource.setPassword(databaseProperties.getProperty(DatabaseConfig.PROP_DATABASE_PASSWORD));
+        }
     };
 
 	/*

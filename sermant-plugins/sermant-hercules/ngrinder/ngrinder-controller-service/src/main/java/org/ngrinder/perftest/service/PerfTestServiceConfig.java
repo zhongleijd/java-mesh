@@ -53,8 +53,6 @@ public class PerfTestServiceConfig implements ApplicationContextAware {
 			service = applicationContext.getAutowireCapableBeanFactory().createBean(PerfTestService.class);
 		}
 		return service;
-//		return applicationContext.getAutowireCapableBeanFactory().createBean(
-//				config.isClustered() ? ClusteredPerfTestService.class : PerfTestService.class);
 	}
 
 	@Override

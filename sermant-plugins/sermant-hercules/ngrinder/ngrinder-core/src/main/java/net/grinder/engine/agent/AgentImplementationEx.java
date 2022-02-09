@@ -20,13 +20,23 @@
 // OF THE POSSIBILITY OF SUCH DAMAGE.
 package net.grinder.engine.agent;
 
+import com.huawei.argus.serializer.CustomFileStore;
 import net.grinder.GrinderConstants;
 import net.grinder.common.GrinderBuild;
 import net.grinder.common.GrinderException;
 import net.grinder.common.GrinderProperties;
 import net.grinder.common.GrinderProperties.PersistenceException;
 import net.grinder.common.processidentity.ProcessReport;
-import net.grinder.communication.*;
+import net.grinder.communication.ClientReceiver;
+import net.grinder.communication.ClientSender;
+import net.grinder.communication.CommunicationException;
+import net.grinder.communication.ConnectionType;
+import net.grinder.communication.Connector;
+import net.grinder.communication.FanOutStreamSender;
+import net.grinder.communication.IgnoreShutdownSender;
+import net.grinder.communication.MessageDispatchSender;
+import net.grinder.communication.MessagePump;
+import net.grinder.communication.TeeSender;
 import net.grinder.engine.common.ConnectorFactory;
 import net.grinder.engine.common.EngineException;
 import net.grinder.engine.common.ScriptLocation;
@@ -53,7 +63,10 @@ import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import static org.ngrinder.common.constants.GrinderConstants.*;
+import static org.ngrinder.common.constants.GrinderConstants.GRINDER_PROP_ETC_HOSTS;
+import static org.ngrinder.common.constants.GrinderConstants.GRINDER_PROP_SECURITY;
+import static org.ngrinder.common.constants.GrinderConstants.GRINDER_PROP_SECURITY_LEVEL;
+import static org.ngrinder.common.constants.GrinderConstants.GRINDER_SECURITY_LEVEL_NORMAL;
 
 /**
  * This is the entry point of The Grinder agent process.
@@ -78,7 +91,7 @@ public class AgentImplementationEx implements Agent, AgentConstants {
 	 * We use an most one file store throughout an agent's life, but can't Initialize it until we've
 	 * read the properties and connected to the console.
 	 */
-	private volatile FileStore m_fileStore;
+	private volatile CustomFileStore m_fileStore;
 
 	private final AgentConfig m_agentConfig;
 
@@ -496,7 +509,7 @@ public class AgentImplementationEx implements Agent, AgentConstants {
 		private final MessagePump m_messagePump;
 
 		public ConsoleCommunication(Connector connector, String user) throws CommunicationException,
-				FileStore.FileStoreException {
+            CustomFileStore.FileStoreException {
 
 			final ClientReceiver receiver = ClientReceiver.connect(connector, new AgentAddress(m_agentIdentity));
 			m_sender = ClientSender.connect(receiver);
@@ -506,7 +519,7 @@ public class AgentImplementationEx implements Agent, AgentConstants {
 				// Only create the file store if we connected.
 				File base = m_agentConfig.getHome().getDirectory();
 				File directory = new File(new File(base, "file-store"), user);
-				m_fileStore = new FileStore(directory, m_logger);
+				m_fileStore = new CustomFileStore(directory);
 			}
 
 			m_sender.send(new AgentProcessReportMessage(ProcessReport.STATE_STARTED, m_fileStore
@@ -514,6 +527,9 @@ public class AgentImplementationEx implements Agent, AgentConstants {
 
 			final MessageDispatchSender fileStoreMessageDispatcher = new MessageDispatchSender();
 			m_fileStore.registerMessageHandlers(fileStoreMessageDispatcher);
+
+			// 重新设置文件消息处理器为zip方式，传过来的zip类型文件先解压，再执行后面的操作
+            // fefefefe
 
 			final MessageDispatchSender messageDispatcher = new MessageDispatchSender();
 			m_consoleListener.registerMessageHandlers(messageDispatcher);
@@ -532,7 +548,7 @@ public class AgentImplementationEx implements Agent, AgentConstants {
 								.getCacheHighWaterMark()));
 					} catch (CommunicationException e) {
 						cancel();
-						m_logger.error("Error while pumping up the AgentProcessReportMessage", e.getMessage());
+						m_logger.error("Error while pumping up the AgentProcessReportMessage:{}", e.getMessage());
 						m_logger.debug("The error detail is ", e);
 					}
 

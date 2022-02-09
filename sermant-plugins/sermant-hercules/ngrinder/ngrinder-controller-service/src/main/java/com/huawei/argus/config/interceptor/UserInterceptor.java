@@ -19,6 +19,7 @@
 package com.huawei.argus.config.interceptor;
 
 import com.huawei.argus.config.UserFactory;
+import org.ngrinder.model.User;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
 
@@ -34,7 +35,8 @@ import javax.servlet.http.HttpServletResponse;
 public class UserInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, Object o) throws Exception {
-        httpServletRequest.setAttribute("user", UserFactory.newInstance());
+        User user = UserFactory.newInstance();
+        httpServletRequest.setAttribute("user", user);
         return true;
     }
 
