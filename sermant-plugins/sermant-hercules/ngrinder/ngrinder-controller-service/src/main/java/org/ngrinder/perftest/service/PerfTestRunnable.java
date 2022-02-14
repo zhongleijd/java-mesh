@@ -37,6 +37,7 @@ import org.ngrinder.infra.schedule.ScheduledTaskService;
 import org.ngrinder.model.PerfTest;
 import org.ngrinder.model.PerfTestReport;
 import org.ngrinder.model.Status;
+import org.ngrinder.model.User;
 import org.ngrinder.perftest.model.NullSingleConsole;
 import org.ngrinder.perftest.service.samplinglistener.AgentDieHardListener;
 import org.ngrinder.perftest.service.samplinglistener.AgentLostDetectionListener;
@@ -47,17 +48,23 @@ import org.ngrinder.script.handler.ScriptHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.task.TaskExecutorBuilder;
+import org.springframework.core.task.TaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.io.File;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import static org.apache.commons.lang.ObjectUtils.defaultIfNull;
 import static org.ngrinder.common.constant.ClusterConstants.PROP_CLUSTER_SAFE_DIST;
@@ -110,6 +117,11 @@ public class PerfTestRunnable implements ControllerConstants {
     @Autowired
     private PerfTestReportService perfTestReportService;
 
+    @Value("${ngrinder.auto.execute.test:false}")
+    private boolean autoExecuteTest;
+
+    private ThreadPoolTaskExecutor taskExecutor;
+
     private Runnable startRunnable;
 
     private Runnable finishRunnable;
@@ -121,13 +133,7 @@ public class PerfTestRunnable implements ControllerConstants {
         // Clean up db first.
         doFinish(true);
 
-        this.startRunnable = new Runnable() {
-            @Override
-            public void run() {
-                startPeriodically();
-            }
-        };
-        scheduledTaskService.addFixedDelayedScheduledTask(startRunnable, PERFTEST_RUN_FREQUENCY_MILLISECONDS);
+        // 添加处理已经结束任务的job
         this.finishRunnable = new Runnable() {
             @Override
             public void run() {
@@ -136,12 +142,59 @@ public class PerfTestRunnable implements ControllerConstants {
         };
         scheduledTaskService.addFixedDelayedScheduledTask(finishRunnable, PERFTEST_RUN_FREQUENCY_MILLISECONDS);
 
+        // 如果不是自动执行任务，不添加线程执行任务,但是需要启动一个线程池来执行用户触发的执行任务
+        if (!autoExecuteTest) {
+            this.taskExecutor = initThreadPool();
+            return;
+        }
+
+        // 如果是自动执行任务，添加自动执行任务job
+        this.startRunnable = new Runnable() {
+            @Override
+            public void run() {
+                startPeriodically();
+            }
+        };
+        scheduledTaskService.addFixedDelayedScheduledTask(startRunnable, PERFTEST_RUN_FREQUENCY_MILLISECONDS);
+    }
+
+    private ThreadPoolTaskExecutor initThreadPool() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+
+        // 设置核心线程数
+        executor.setCorePoolSize(10);
+
+        // 设置最大线程数
+        executor.setMaxPoolSize(100);
+
+        // 设置队列容量
+        executor.setQueueCapacity(100);
+
+        // 设置线程活跃时间（秒）
+        executor.setKeepAliveSeconds(60);
+
+        // 设置默认线程名称
+        executor.setThreadNamePrefix("run-perf-test-");
+
+        // 设置拒绝策略
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+
+        // 等待所有任务结束后再关闭线程池
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.initialize();
+        return executor;
     }
 
     @PreDestroy
     public void destroy() {
-        scheduledTaskService.removeScheduledJob(this.startRunnable);
         scheduledTaskService.removeScheduledJob(this.finishRunnable);
+
+        // 如果不是自动执行任务，没有添加测试任务执行线程，就不用删除
+        if (!autoExecuteTest) {
+            taskExecutor.shutdown();
+            return;
+        }
+        scheduledTaskService.removeScheduledJob(this.startRunnable);
     }
 
     /**
@@ -153,44 +206,78 @@ public class PerfTestRunnable implements ControllerConstants {
         doStart();
     }
 
-    void doStart() {
-        if (config.hasNoMoreTestLock()) {
+    /**
+     * 手动执行压测任务
+     *
+     * @param user   执行压测任务的用户
+     * @param testId 压测任务id
+     */
+    public void doStart(final User user, final long testId) {
+        // 如果是自动执行状态，该方法不给调用
+        if (autoExecuteTest) {
+            LOG.info("The test will be executed automatically, id = {}.", testId);
             return;
+        }
+        if (!isConditionMatch()) return;
+
+        // Find out ready perf_test
+        PerfTest runCandidate = getRunnablePerfTest(testId);
+        if (!isPerfTestValid(runCandidate)) return;
+        if (user == null || !user.getUserId().equals(runCandidate.getCreatedUser().getUserId())) {
+            LOG.error("The user didn't match the perf_test.");
+            return;
+        }
+        taskExecutor.execute(() -> {
+            doTest(runCandidate);
+        });
+    }
+
+    void doStart() {
+        if (!isConditionMatch()) return;
+        // Find out next ready perftest
+        PerfTest runCandidate = getRunnablePerfTest();
+        if (!isPerfTestValid(runCandidate)) return;
+        doTest(runCandidate);
+    }
+
+    private boolean isPerfTestValid(PerfTest runCandidate) {
+        if (runCandidate == null) {
+            return false;
+        }
+        if (!isScheduledNow(runCandidate)) {
+            // this test project is reserved,but it isn't yet going to run test
+            // right now.
+            return false;
+        }
+        if (!hasEnoughFreeAgents(runCandidate)) {
+            return false;
+        }
+        if (!hasSelectFreeAgents(runCandidate)) {
+            return false;
+        }
+        return true;
+    }
+
+    private boolean isConditionMatch() {
+        if (config.hasNoMoreTestLock()) {
+            return false;
         }
         // Block if the count of testing exceed the limit
         if (!canExecuteMore()) {
             // LOG MORE
             List<PerfTest> currentlyRunningTests = perfTestService.getCurrentlyRunningTest();
             LOG.debug("Currently running test is {}. No more tests can not run.", currentlyRunningTests.size());
-            return;
+            return false;
         }
-        // Find out next ready perftest
-        PerfTest runCandidate = getRunnablePerfTest();
-        if (runCandidate == null) {
-            return;
-        }
-
-        if (!isScheduledNow(runCandidate)) {
-            // this test project is reserved,but it isn't yet going to run test
-            // right now.
-            return;
-        }
-
-
-        if (!hasEnoughFreeAgents(runCandidate)) {
-            return;
-        }
-
-        if (!hasSelectFreeAgents(runCandidate)) {
-            return;
-        }
-
-        // 再次判断任务是否是ready状态
-        doTest(runCandidate);
+        return true;
     }
 
     private PerfTest getRunnablePerfTest() {
         return perfTestService.getNextRunnablePerfTestPerfTestCandidate();
+    }
+
+    private PerfTest getRunnablePerfTest(long testId) {
+        return perfTestService.getRunnablePerfTestPerfTestCandidate(testId);
     }
 
     private boolean canExecuteMore() {

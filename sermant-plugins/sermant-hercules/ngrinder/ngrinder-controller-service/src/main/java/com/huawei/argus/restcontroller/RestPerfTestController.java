@@ -40,9 +40,12 @@ import org.ngrinder.model.Role;
 import org.ngrinder.model.Status;
 import org.ngrinder.model.User;
 import org.ngrinder.perftest.service.AgentManager;
+import org.ngrinder.perftest.service.PerfTestRunnable;
 import org.ngrinder.perftest.service.PerfTestService;
 import org.ngrinder.perftest.service.TagService;
 import org.python.google.common.collect.Maps;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -86,6 +89,10 @@ import static org.ngrinder.common.util.Preconditions.checkState;
 @RestController
 @RequestMapping("/rest/api/")
 public class RestPerfTestController extends RestBaseController {
+    /**
+     * 日志
+     */
+    private static final Logger LOGGER = LoggerFactory.getLogger(RestPerfTestController.class);
 
     @Autowired
     private PerfTestService perfTestService;
@@ -98,6 +105,9 @@ public class RestPerfTestController extends RestBaseController {
 
     @Autowired
     private TagService tagService;
+
+    @Autowired
+    private PerfTestRunnable perfTestRunnable;
 
     /**
      * Get the perf test lists.
@@ -169,7 +179,7 @@ public class RestPerfTestController extends RestBaseController {
     }
 
     /**
-     * Create a new test or cloneTo a current test.
+     * Create a new test.
      *
      * @param user     user
      * @param perfTest {@link PerfTest}
@@ -191,6 +201,36 @@ public class RestPerfTestController extends RestBaseController {
             }
         }
         return perfTestService.save(user, perfTest);
+    }
+
+    /**
+     * start a test.
+     *
+     * @param user   user
+     * @param testId 启动的压测任务id
+     * @return perf_test
+     */
+    @RequestMapping(value = "/perftest/{testId}", method = RequestMethod.PUT)
+    public Map<String, Object> startOne(User user, @PathVariable Long testId) {
+        PerfTest perfTestExisted = perfTestService.getOne(testId);
+        if (perfTestExisted == null) {
+            LOGGER.error("Can not start test didn't exist, id={}.", testId);
+            return returnError();
+        }
+        if (user == null || !user.getUserId().equals(perfTestExisted.getCreatedUser().getUserId())) {
+            LOGGER.error("Can not start test, need created user to start.");
+            return returnError();
+        }
+        if (perfTestExisted.getStatus() == Status.SAVED) {
+            perfTestExisted.setStatus(Status.READY);
+            perfTestService.save(user, perfTestExisted);
+        }
+        if (perfTestExisted.getStatus() != Status.READY) {
+            LOGGER.error("Can not start test, because status isn't READY.");
+            return returnError();
+        }
+        perfTestRunnable.doStart(user, testId);
+        return returnSuccess();
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -654,7 +694,6 @@ public class RestPerfTestController extends RestBaseController {
         return toJsonHttpEntity(buildMap("perfTestInfo", perfTestService.getCurrentPerfTestStatistics(), "status",
             getStatus(perfTests)));
     }
-
 
 
     /**

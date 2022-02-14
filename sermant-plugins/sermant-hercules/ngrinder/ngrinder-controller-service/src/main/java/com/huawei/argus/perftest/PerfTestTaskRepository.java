@@ -34,10 +34,10 @@ public interface PerfTestTaskRepository extends JpaRepository<PerfTest, Long>, J
 
     Page<PerfTest> findAll(Specification<PerfTest> spec, Pageable pageable);
 
-    @Query(value = "SELECT hostName FROM `AGENT` WHERE id in ?1", nativeQuery = true)
+    @Query(value = "SELECT hostName FROM AGENT WHERE id in ?1", nativeQuery = true)
     List<String> getSelectAgentNameList(List<String> agentIds);
 
-    @Query(value = "SELECT id FROM `PERF_TEST_REPORT` WHERE perf_test_id = ?1 order by created_date desc limit 0,1", nativeQuery = true)
+    @Query(value = "SELECT id FROM PERF_TEST_REPORT WHERE perf_test_id = ?1 order by created_date desc limit 0,1", nativeQuery = true)
     String getReportIdByTestId(Long id);
 
     /**
@@ -46,6 +46,6 @@ public interface PerfTestTaskRepository extends JpaRepository<PerfTest, Long>, J
      * @param perfScene
      * @return
      */
-    @Query(value = "select * from `PERF_TEST` where scene_id=:#{perfScene.id}", nativeQuery = true)
+    @Query(value = "select * from PERF_TEST where scene_id=:#{perfScene.id}", nativeQuery = true)
     List<PerfTest> getPerfTestsByPerfScene(PerfScene perfScene);
 }

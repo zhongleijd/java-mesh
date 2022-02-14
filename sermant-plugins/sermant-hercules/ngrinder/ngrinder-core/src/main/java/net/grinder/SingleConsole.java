@@ -469,12 +469,12 @@ public class SingleConsole extends AbstractSingleConsole implements Listener, Sa
 				return;
 			}
 		}
-		throw processException("Connection is not completed until 10 sec");
+		throw processException("Connection is not completed until 60 sec");
 	}
 
 	/**
 	 * Wait until the count of running threads becomes 0. If the elapsed time
-	 * is over 10 seconds, an {@link NGrinderRuntimeException} is thrown.
+	 * is over 40 seconds, an {@link NGrinderRuntimeException} is thrown.
 	 */
 	public void waitUntilAllAgentDisconnected() {
 		int trial = 1;
@@ -491,7 +491,7 @@ public class SingleConsole extends AbstractSingleConsole implements Listener, Sa
 				return;
 			}
 		}
-		throw processException("Connection is not completed for 20 sec");
+		throw processException("Connection is not completed for 40 sec");
 	}
 
 	/**

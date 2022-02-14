@@ -533,6 +533,21 @@ public class PerfTestService extends AbstractPerfTestService implements Controll
     }
 
     /**
+     * Get the next runnable {@link PerfTest}.
+     *
+     * @return found {@link PerfTest} which is ready to run, null otherwise
+     */
+    @Transactional
+    public PerfTest getRunnablePerfTestPerfTestCandidate(long testId) {
+        PerfTest readyPerfTest = perfTestRepository.getOne(testId);
+        if (readyPerfTest.getStatus() != Status.READY) {
+            return null;
+        }
+        readyPerfTest.setScriptName(new File(readyPerfTest.getScriptName()).getPath());
+        return readyPerfTest;
+    }
+
+    /**
      * Get currently running {@link PerfTest} list.
      *
      * @return running test list
