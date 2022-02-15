@@ -411,30 +411,17 @@ public class RestPerfTestController extends RestBaseController {
         return modelInfos;
     }
 
-
     /**
-     * Get the basic report content in perftest configuration page.
-     * <p/>
-     * This method returns the appropriate points based on the given imgWidth.
+     * 根据压测任务id获取指定任务的压测
      *
-     * @param user     user
-     * @param id       test id
-     * @param imgWidth image width
-     * @return perftest/basic_report
+     * @param user         调用接口用户信息
+     * @param id           压测任务id
+     * @param imgWidth     动图展示宽度
+     * @param thisDuration 动图展示区间
+     * @param timeInterval 动图展示频率
+     * @return 压测任务搜集的数据信息
      */
-    @RequestMapping(value = "{id}/basic_report")
-    public JSONObject getReportSection(User user, @PathVariable long id, @RequestParam int imgWidth) {
-        PerfTest test = getOneWithPermissionCheck(user, id, false);
-        int interval = perfTestService.getReportDataInterval(id, "TPS", imgWidth);
-        JSONObject modelInfos = new JSONObject();
-        modelInfos.put(PARAM_LOG_LIST, perfTestService.getLogFiles(id));
-        modelInfos.put(PARAM_TEST_CHART_INTERVAL, interval * test.getSamplingInterval());
-        modelInfos.put(PARAM_TEST, test);
-        modelInfos.put(PARAM_TPS, perfTestService.getSingleReportDataAsJson(id, "TPS", interval));
-        return modelInfos;
-    }
-
-    @RequestMapping(value = "/basic_report")
+    @RequestMapping(value = "/report/basic")
     public JSONObject getReportSectionById(User user, @RequestParam long id, @RequestParam int imgWidth, @RequestParam int thisDuration, @RequestParam int timeInterval) {
         PerfTest test = getOneWithPermissionCheck(user, id, false);
         int interval = perfTestService.getReportDataInterval(id, "TPS", imgWidth);
@@ -548,36 +535,17 @@ public class RestPerfTestController extends RestBaseController {
         }
     }
 
-    /**
-     * Get the running perf test info having the given id.
-     *
-     * @param user user
-     * @param id   test id
-     * @return JSON message	containing test,agent and monitor status.
-     */
-    @RequestMapping(value = "/{id}/api/sample")
-    @RestAPI
-    public HttpEntity<String> refreshTestRunning(User user, @PathVariable("id") long id) {
+    @RequestMapping(value = "/report/sample")
+    public JSONObject refreshTestRunningById(User user, @RequestParam long id) {
         PerfTest test = checkNotNull(getOneWithPermissionCheck(user, id, false), "given test should be exist : " + id);
-        Map<String, Object> map = newHashMap();
-        map.put("status", test.getStatus());
-        map.put("perf", perfTestService.getStatistics(test));
-        map.put("agent", perfTestService.getAgentStat(test));
-        map.put("monitor", perfTestService.getMonitorStat(test));
-        return toJsonHttpEntity(map);
-    }
-
-    @RequestMapping(value = "/api/sample")
-    public HttpEntity<JSONObject> refreshTestRunningById(User user, @RequestParam long id) {
-        PerfTest test = checkNotNull(getOneWithPermissionCheck(user, id, false), "given test should be exist : " + id);
-        JSONObject map = new JSONObject();
-        map.put("test", test);
-        map.put("status", test.getStatus());
-        map.put("perf", perfTestService.getStatistics(test));
-        map.put("agent", perfTestService.getAgentStat(test));
-        map.put("monitor", perfTestService.getMonitorStat(test));
-        map.put(PARAM_LOG_LIST, perfTestService.getLogFiles(id));
-        return new HttpEntity<>(map);
+        JSONObject response = new JSONObject();
+        response.put("test", test);
+        response.put("status", test.getStatus());
+        response.put("perf", perfTestService.getStatistics(test));
+        response.put("agent", perfTestService.getAgentStat(test));
+        response.put("monitor", perfTestService.getMonitorStat(test));
+        response.put(PARAM_LOG_LIST, perfTestService.getLogFiles(id));
+        return response;
     }
 
     /**
