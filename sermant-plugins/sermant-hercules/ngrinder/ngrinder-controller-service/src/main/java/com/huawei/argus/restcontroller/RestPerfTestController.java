@@ -554,19 +554,7 @@ public class RestPerfTestController extends RestBaseController {
      * @param id test id
      * @return perftest/detail_report
      */
-    @SuppressWarnings("MVCPathVariableInspection")
-    @RequestMapping(value = {"/{id}/detail_report", /** for backward compatibility */"/{id}/report"})
-    public JSONObject getReport(@PathVariable("id") long id) {
-        JSONObject modelInfos = new JSONObject();
-        PerfTest test = perfTestService.getOne(id);
-        if (test != null) {
-            modelInfos.put("test", test);
-        }
-        modelInfos.put("plugins", perfTestService.getAvailableReportPlugins(id));
-        return modelInfos;
-    }
-
-    @RequestMapping(value = {"/detail_report", /** for backward compatibility */"/{id}/report"})
+    @RequestMapping(value = {"/report/detail"})
     public JSONObject getReportById(@RequestParam long id) {
         JSONObject modelInfos = new JSONObject();
         PerfTest test = perfTestService.getOne(id);
@@ -577,52 +565,6 @@ public class RestPerfTestController extends RestBaseController {
         modelInfos.put("plugins", perfTestService.getAvailableReportPlugins(id));
         return modelInfos;
     }
-
-    /**
-     * Get the detailed perf test report.[未改变，不使用]
-     *
-     * @param id test id
-     * @return perftest/detail_report/perf
-     */
-    @SuppressWarnings({"MVCPathVariableInspection", "UnusedParameters"})
-    @RequestMapping("/{id}/detail_report/perf")
-    public String getDetailPerfReport(@PathVariable("id") long id) {
-        return "perftest/detail_report/perf";
-    }
-
-    /**
-     * Get the detailed perf test monitor report.[未改变，不使用]
-     *
-     * @param id       test id
-     * @param targetIP target ip
-     * @param modelMap model map
-     * @return perftest/detail_report/monitor
-     */
-    @SuppressWarnings("UnusedParameters")
-    @RequestMapping("/{id}/detail_report/monitor")
-    public String getDetailMonitorReport(@PathVariable("id") long id, @RequestParam("targetIP") String targetIP,
-                                         ModelMap modelMap) {
-        modelMap.addAttribute("targetIP", targetIP);
-        return "perftest/detail_report/monitor";
-    }
-
-    /**
-     * Get the detailed perf test report.
-     *
-     * @param id       test id
-     * @param plugin   test report plugin category[未改变，不使用]
-     * @param modelMap model map
-     * @return perftest/detail_report/plugin
-     */
-    @SuppressWarnings("UnusedParameters")
-    @RequestMapping("/{id}/detail_report/plugin/{plugin}")
-    public String getDetailPluginReport(@PathVariable("id") long id,
-                                        @PathVariable("plugin") String plugin, @RequestParam("kind") String kind, ModelMap modelMap) {
-        modelMap.addAttribute("plugin", plugin);
-        modelMap.addAttribute("kind", kind);
-        return "perftest/detail_report/plugin";
-    }
-
 
     private PerfTest getOneWithPermissionCheck(User user, Long id, boolean withTag) {
         PerfTest perfTest = withTag ? perfTestService.getOneWithTag(id) : perfTestService.getOne(id);
@@ -637,16 +579,6 @@ public class RestPerfTestController extends RestBaseController {
         }
         return perfTest;
     }
-
-
-    private Map<String, String> getMonitorGraphData(long id, String targetIP, int imgWidth) {
-        int interval = perfTestService.getMonitorGraphInterval(id, targetIP, imgWidth);
-        Map<String, String> sysMonitorMap = perfTestService.getMonitorGraph(id, targetIP, interval);
-        PerfTest perfTest = perfTestService.getOne(id);
-        sysMonitorMap.put("interval", String.valueOf(interval * (perfTest != null ? perfTest.getSamplingInterval() : 1)));
-        return sysMonitorMap;
-    }
-
 
     /**
      * Get the count of currently running perf test and the detailed progress info for the given perf test IDs.
@@ -688,43 +620,17 @@ public class RestPerfTestController extends RestBaseController {
      * @param imgWidth imageWidth
      * @return json string.
      */
-    @SuppressWarnings("MVCPathVariableInspection")
-    @RestAPI
-    @RequestMapping({"/api/{id}/perf", "/api/{id}/graph"})
-    public HttpEntity<JSONObject> getPerfGraph(@PathVariable("id") long id,
-                                               @RequestParam(required = true, defaultValue = "") String dataType,
-                                               @RequestParam(defaultValue = "false") boolean onlyTotal,
-                                               @RequestParam int imgWidth) {
-        String[] dataTypes = checkNotEmpty(StringUtils.split(dataType, ","), "dataType argument should be provided");
-        return toHttpEntity(getPerfGraphData(id, dataTypes, onlyTotal, imgWidth));
-    }
-
-    @RequestMapping({"/api/perf"})
-    public HttpEntity<JSONObject> getPerfGraphById(@RequestParam("id") long id,
+    @RequestMapping({"/report/perf"})
+    public JSONObject getPerfGraphById(@RequestParam("id") long id,
                                                    @RequestParam(defaultValue = "") String dataType,
                                                    @RequestParam(defaultValue = "false") boolean onlyTotal,
                                                    @RequestParam int imgWidth) {
         String[] dataTypes = checkNotEmpty(StringUtils.split(dataType, ","), "dataType argument should be provided");
         PerfTest perfTest = perfTestService.getOne(id);
         if (perfTest == null) {
-            return toHttpEntity(new JSONObject());
+            return new JSONObject();
         }
-        return toHttpEntity(getPerfGraphData(id, dataTypes, onlyTotal, imgWidth));
-    }
-
-    /**
-     * Get the monitor data of the target having the given IP.
-     *
-     * @param id       test Id
-     * @param targetIP targetIP
-     * @param imgWidth image width
-     * @return json message
-     */
-    @RestAPI
-    @RequestMapping("/api/{id}/monitor")
-    public HttpEntity<String> getMonitorGraph(@PathVariable("id") long id,
-                                              @RequestParam("targetIP") String targetIP, @RequestParam int imgWidth) {
-        return toJsonHttpEntity(getMonitorGraphData(id, targetIP, imgWidth));
+        return getPerfGraphData(id, dataTypes, onlyTotal, imgWidth);
     }
 
     /**
