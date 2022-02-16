@@ -19,6 +19,9 @@
 package com.huawei.argus.restcontroller;
 
 import com.alibaba.fastjson.JSONObject;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ResponseHeader;
 import org.ngrinder.agent.service.AgentPackageService;
 import org.ngrinder.common.controller.BaseController;
 import org.ngrinder.common.util.FileDownloadUtils;
@@ -31,6 +34,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import springfox.documentation.annotations.ApiIgnore;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -40,6 +44,7 @@ import static org.ngrinder.common.util.ExceptionUtils.processException;
 import static org.ngrinder.common.util.Preconditions.checkNotEmpty;
 import static org.ngrinder.common.util.Preconditions.checkNotNull;
 
+@Api(tags = "Agent管理")
 @RestController
 @RequestMapping("/rest/agent")
 public class RestAgentDownloadController extends RestBaseController {
@@ -56,6 +61,7 @@ public class RestAgentDownloadController extends RestBaseController {
 	 * @param fileName file path of agent
 	 * @param response response.
 	 */
+	@ApiOperation(tags = "Agent管理", httpMethod = "GET", value = "下载agent包")
 	@RequestMapping(value = "/download/{fileName:[a-zA-Z0-9\\.\\-_]+}")
 	public void download(@PathVariable String fileName, HttpServletResponse response) {
 		File home = getConfig().getHome().getDownloadDirectory();
@@ -71,6 +77,7 @@ public class RestAgentDownloadController extends RestBaseController {
 	 * @param region  agent region
 	 * @param request request.
 	 */
+	@ApiIgnore
 	@RequestMapping(value = "/download/{region}/{owner}")
 	public String downloadDirect(@PathVariable(value = "owner") String owner,
 								 @PathVariable(value = "region") String region,
@@ -87,7 +94,8 @@ public class RestAgentDownloadController extends RestBaseController {
 	 * @param region  agent region
 	 * @param request request.
 	 */
-	@RequestMapping(value = "/download")
+    @ApiOperation(tags = "Agent管理", httpMethod = "GET", value = "刷新agent包", responseHeaders = {@ResponseHeader(name = "application/json", response = JSONObject.class)})
+    @RequestMapping(value = "/download", produces = "application/json;charset=UTF-8")
 	public JSONObject download(@RequestParam(value = "owner", required = false) String owner,
 						   @RequestParam(value = "region", required = false) String region,
 						   ModelMap modelMap,

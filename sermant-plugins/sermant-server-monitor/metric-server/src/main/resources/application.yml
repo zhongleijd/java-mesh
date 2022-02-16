@@ -1,7 +1,7 @@
 spring:
   kafka:
     consumer:
-      bootstrap-servers: localhost:9092
+      bootstrap-servers: 100.94.169.124:9092
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
       max-poll-records: 1000
@@ -9,7 +9,7 @@ spring:
 server:
   port: 9998
 influx:
-  token: yourTocken
-  bucket: yourBucket
-  url: http://localhost:9096
-  org: yourOrg
+  token: huawei-token
+  bucket: public
+  url: http://100.94.169.124:8086
+  org: huawei
