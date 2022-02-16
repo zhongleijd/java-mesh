@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2021 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (C) 2021-2022 Huawei Technologies Co., Ltd. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,17 +17,18 @@
 package com.huawei.gray.dubbo.service;
 
 import com.huawei.gray.dubbo.cache.DubboCache;
-import com.huawei.sermant.core.plugin.config.PluginConfigManager;
-import com.huawei.sermant.core.util.SpiLoadUtil.SpiWeight;
 import com.huawei.route.common.gray.config.GrayConfig;
 import com.huawei.route.common.gray.constants.GrayConstant;
 import com.huawei.route.common.gray.label.LabelCache;
 import com.huawei.route.common.gray.label.entity.CurrentTag;
 import com.huawei.route.common.gray.label.entity.GrayConfiguration;
+import com.huawei.sermant.core.plugin.config.PluginConfigManager;
 
 import org.apache.dubbo.config.ApplicationConfig;
 
 import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * InterfaceConfigInterceptor的service
@@ -35,7 +36,6 @@ import java.lang.reflect.Method;
  * @author pengyuyi
  * @date 2021/11/24
  */
-@SpiWeight(1)
 public class InterfaceConfigServiceImpl extends InterfaceConfigService {
     @Override
     public Object after(Object obj, Method method, Object[] arguments, Object result) throws Exception {
@@ -43,16 +43,24 @@ public class InterfaceConfigServiceImpl extends InterfaceConfigService {
             ApplicationConfig config = (ApplicationConfig) result;
             GrayConfig grayConfig = PluginConfigManager.getPluginConfig(GrayConfig.class);
             String version = grayConfig.getGrayVersion(GrayConstant.GRAY_DEFAULT_VERSION);
-            config.getParameters().put(GrayConstant.GRAY_VERSION_KEY, version);
+            Map<String, String> versionMap = new HashMap<String, String>();
+            versionMap.put(GrayConstant.GRAY_VERSION_KEY, version);
+            Map<String, String> parameters = config.getParameters();
+            if (parameters == null) {
+                config.setParameters(versionMap);
+                parameters = config.getParameters();
+            } else if (parameters.get(GrayConstant.GRAY_VERSION_KEY) == null) {
+                config.getParameters().putAll(versionMap);
+            }
             String ldc = grayConfig.getLdc(GrayConstant.GRAY_DEFAULT_LDC);
-            config.getParameters().put(GrayConstant.GRAY_LDC_KEY, ldc);
+            parameters.put(GrayConstant.GRAY_LDC_KEY, ldc);
             DubboCache.setAppName(config.getName());
             GrayConfiguration grayConfiguration = LabelCache.getLabel(DubboCache.getLabelName());
             CurrentTag currentTag = grayConfiguration.getCurrentTag();
             if (currentTag == null) {
                 currentTag = new CurrentTag();
             }
-            currentTag.setVersion(version);
+            currentTag.setVersion(parameters.get(GrayConstant.GRAY_VERSION_KEY));
             currentTag.setLdc(ldc);
             grayConfiguration.setCurrentTag(currentTag);
         }

@@ -13,6 +13,7 @@
         <package.output.dir>${package.server.dir}/sermant</package.output.dir>
         <jdk.version>1.8</jdk.version>
         <spring.boot.version>2.5.3</spring.boot.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
     <dependencyManagement>
@@ -134,6 +135,26 @@
                 <groupId>org.xolstice.maven.plugins</groupId>
                 <artifactId>protobuf-maven-plugin</artifactId>
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+            </plugin>
         </plugins>
+
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+
+            <resource>
+                <directory>src/main/webapp/</directory>
+                <excludes>
+                    <exclude>frontend/node_modules/**</exclude>
+                </excludes>
+            </resource>
+        </resources>
+
     </build>
 </project>

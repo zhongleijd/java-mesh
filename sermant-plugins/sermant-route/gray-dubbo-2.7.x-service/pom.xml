@@ -30,7 +30,7 @@
 
         <dependency>
             <groupId>org.apache.dubbo</groupId>
-            <artifactId>dubbo</artifactId>
+            <artifactId>dubbo-config-api</artifactId>
             <version>${dubbo.version}</version>
             <scope>provided</scope>
         </dependency>
@@ -38,13 +38,6 @@
         <dependency>
             <groupId>org.apache.servicecomb</groupId>
             <artifactId>service-center-client</artifactId>
-            <version>${servicecomb.version}</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.servicecomb</groupId>
-            <artifactId>config-clients-common</artifactId>
             <version>${servicecomb.version}</version>
             <scope>provided</scope>
         </dependency>
