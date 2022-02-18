@@ -50,7 +50,7 @@ public class MonitorDataController {
 
         WriteApiBlocking writeApi = client.getWriteApiBlocking();
         writeApi.writePoint(bucket, org, point);
-        String query = "from(bucket: \"public\") |> range(start: -1h)";
+        String query = "from(bucket: \"public\") |> range(start: -10h)";
         List<FluxTable> tables = client.getQueryApi().query(query, org);
 
         for (FluxTable table : tables) {
