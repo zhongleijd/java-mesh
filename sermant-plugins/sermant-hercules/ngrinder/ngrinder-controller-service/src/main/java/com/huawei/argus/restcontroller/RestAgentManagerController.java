@@ -21,10 +21,11 @@ package com.huawei.argus.restcontroller;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.base.Predicate;
 import com.huawei.argus.common.PageModel;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import org.apache.commons.lang.StringUtils;
 import org.ngrinder.agent.service.AgentManagerService;
 import org.ngrinder.agent.service.AgentPackageService;
-import org.ngrinder.common.controller.RestAPI;
 import org.ngrinder.model.AgentInfo;
 import org.ngrinder.model.User;
 import org.ngrinder.monitor.controller.model.SystemDataModel;
@@ -41,14 +42,11 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
-import java.util.Map;
 
 import static com.google.common.collect.Collections2.filter;
 import static org.ngrinder.common.util.CollectionUtils.buildMap;
-import static org.ngrinder.common.util.CollectionUtils.newArrayList;
-import static org.ngrinder.common.util.CollectionUtils.newHashMap;
 
+@Api(tags = "Agent管理")
 @RestController
 @RequestMapping("/rest/agent")
 public class RestAgentManagerController extends RestBaseController {
@@ -66,6 +64,7 @@ public class RestAgentManagerController extends RestBaseController {
     /**
      * Get the agents.
      */
+    @ApiOperation(tags = "Agent管理", httpMethod = "GET", value = "查询所有agent")
     @RequestMapping({"/list"})
     public JSONObject getAll(final User user, @RequestParam(value = "region", required = false) final String region) {
         Collection<AgentInfo> agents = agentManagerService.getAllVisible();
@@ -97,6 +96,7 @@ public class RestAgentManagerController extends RestBaseController {
     /**
      * Get the agents by page.
      */
+    @ApiOperation(tags = "Agent管理", httpMethod = "GET", value = "批量查询agent")
     @RequestMapping(value = {"/list"}, params = "pageSize")
     public JSONObject getAgentPage(final User user,
                                    @RequestParam int pageSize,
@@ -134,6 +134,7 @@ public class RestAgentManagerController extends RestBaseController {
      * @param id agent id
      * @return agent/agentDetail
      */
+    @ApiOperation(tags = "Agent管理", httpMethod = "GET", value = "根据id查询指定agent信息")
     @RequestMapping(value = {"/{id}"}, method = RequestMethod.GET)
     public JSONObject getOneById(@PathVariable Long id) {
         JSONObject modelInfos = new JSONObject();
@@ -145,6 +146,7 @@ public class RestAgentManagerController extends RestBaseController {
     /**
      * Clean up the agents in the inactive region
      */
+    @ApiOperation(tags = "Agent管理", httpMethod = "POST", value = "删除INACTIVE状态agent")
     @RequestMapping(value = "/api", params = "action=cleanup", method = RequestMethod.POST)
     public HttpEntity<JSONObject> cleanUpAgentsInInactiveRegion() {
         agentManagerService.cleanup();
@@ -159,44 +161,11 @@ public class RestAgentManagerController extends RestBaseController {
      * @param name agent name
      * @return json message
      */
+    @ApiOperation(tags = "Agent管理", httpMethod = "GET", value = "查询指定agent性能数据")
     @RequestMapping("/api/{id}/state")
     public HttpEntity<SystemDataModel> getState(@PathVariable Long id, @RequestParam String ip, @RequestParam String name) {
         agentManagerService.requestShareAgentSystemDataModel(id);
         return toHttpEntity(agentManagerService.getSystemDataModel(ip, name));
-    }
-
-    /**
-     * Get the current all agents state.
-     *
-     * @return json message
-     */
-    @RestAPI
-    @RequestMapping(value = {"/api/states"}, method = RequestMethod.GET)
-    public HttpEntity<String> getStates() {
-        List<AgentInfo> agents = agentManagerService.getAllVisible();
-        return toJsonHttpEntity(getAgentStatus(agents));
-    }
-
-    /**
-     * Get all agents from database.
-     *
-     * @return json message
-     */
-    @RestAPI
-    @RequestMapping(value = {"/api"}, method = RequestMethod.GET)
-    public HttpEntity<String> getAll() {
-        return toJsonHttpEntity(agentManagerService.getAllVisible());
-    }
-
-    /**
-     * Get the agent for the given agent id.
-     *
-     * @return json message
-     */
-    @RestAPI
-    @RequestMapping(value = "/api/{id}", method = RequestMethod.GET)
-    public HttpEntity<String> getOne(@PathVariable("id") Long id) {
-        return toJsonHttpEntity(agentManagerService.getOne(id));
     }
 
     /**
@@ -205,7 +174,7 @@ public class RestAgentManagerController extends RestBaseController {
      * @param id agent id
      * @return json message
      */
-    @RestAPI
+    @ApiOperation(tags = "Agent管理", httpMethod = "PUT", value = "启用agent")
     @RequestMapping(value = "/api/{id}", params = "action=approve", method = RequestMethod.PUT)
     public HttpEntity<JSONObject> approve(@PathVariable("id") Long id) {
         agentManagerService.approve(id, true);
@@ -218,7 +187,7 @@ public class RestAgentManagerController extends RestBaseController {
      * @param id agent id
      * @return json message
      */
-    @RestAPI
+    @ApiOperation(tags = "Agent管理", httpMethod = "PUT", value = "停用agent")
     @RequestMapping(value = "/api/{id}", params = "action=disapprove", method = RequestMethod.PUT)
     public HttpEntity<JSONObject> disapprove(@PathVariable("id") Long id) {
         agentManagerService.approve(id, false);
@@ -231,26 +200,10 @@ public class RestAgentManagerController extends RestBaseController {
      * @param id agent id
      * @return json message
      */
-    @RestAPI
+    @ApiOperation(tags = "Agent管理", httpMethod = "PUT", value = "根据id停止agent正在执行的压测任务")
     @RequestMapping(value = "/api/{id}", params = "action=stop", method = RequestMethod.PUT)
     public HttpEntity<JSONObject> stop(@PathVariable("id") Long id) {
         agentManagerService.stopAgent(id);
-        return successJsonHttpEntity();
-    }
-
-    /**
-     * Stop the given agent.
-     *
-     * @param ids comma separated agent id list
-     * @return json message
-     */
-    @RestAPI
-    @RequestMapping(value = "/api", params = "action=stop", method = RequestMethod.PUT)
-    public HttpEntity<JSONObject> stop(@RequestParam("ids") String ids) {
-        String[] split = StringUtils.split(ids, ",");
-        for (String each : split) {
-            stop(Long.parseLong(each));
-        }
         return successJsonHttpEntity();
     }
 
@@ -260,7 +213,7 @@ public class RestAgentManagerController extends RestBaseController {
      * @param id agent id
      * @return json message
      */
-    @RestAPI
+    @ApiOperation(tags = "Agent管理", httpMethod = "PUT", value = "根据id更新指定agent")
     @RequestMapping(value = "/api/{id}", params = "action=update", method = RequestMethod.PUT)
     public HttpEntity<JSONObject> update(@PathVariable("id") Long id) {
         agentManagerService.update(id);
@@ -273,7 +226,7 @@ public class RestAgentManagerController extends RestBaseController {
      * @param ids comma separated agent id list
      * @return json message
      */
-    @RestAPI
+    @ApiOperation(tags = "Agent管理", httpMethod = "PUT", value = "批量更新agent")
     @RequestMapping(value = "/api", params = "action=update", method = RequestMethod.PUT)
     public HttpEntity<JSONObject> update(@RequestParam("ids") String ids) {
         String[] split = StringUtils.split(ids, ",");
@@ -289,7 +242,7 @@ public class RestAgentManagerController extends RestBaseController {
      * @param id agent id
      * @return json message
      */
-    @RestAPI
+    @ApiOperation(tags = "Agent管理", httpMethod = "DELETE", value = "删除指定agent")
     @RequestMapping(value = "/api/{id}", params = "action=delete", method = RequestMethod.DELETE)
     HttpEntity<JSONObject> deleteOne(@PathVariable("id") Long id) {
         agentManagerService.delete(id);
@@ -302,7 +255,7 @@ public class RestAgentManagerController extends RestBaseController {
      * @param ids comma separated agent id list
      * @return json message
      */
-    @RestAPI
+    @ApiOperation(tags = "Agent管理", httpMethod = "DELETE", value = "批量删除agent")
     @RequestMapping(value = "/api", params = "action=delete", method = RequestMethod.DELETE)
     HttpEntity<JSONObject> deleteMany(@RequestParam("ids") String ids) {
         String[] split = StringUtils.split(ids, ",");
@@ -312,19 +265,6 @@ public class RestAgentManagerController extends RestBaseController {
         return successJsonHttpEntity();
     }
 
-    private List<Map<String, Object>> getAgentStatus(List<AgentInfo> agents) {
-        List<Map<String, Object>> statuses = newArrayList(agents.size());
-        for (AgentInfo each : agents) {
-            Map<String, Object> result = newHashMap();
-            result.put("id", each.getId());
-            result.put("port", each.getPort());
-            result.put("icon", each.getState().getCategory().getIconName());
-            result.put("state", each.getState());
-            statuses.add(result);
-        }
-        return statuses;
-    }
-
     /**
      * Get the number of available agents.
      *
@@ -332,7 +272,7 @@ public class RestAgentManagerController extends RestBaseController {
      * @param targetRegion The name of target region
      * @return availableAgentCount Available agent count
      */
-    @RestAPI
+    @ApiOperation(tags = "Agent管理", httpMethod = "GET", value = "获取可用agent数据量")
     @RequestMapping(value = {"/api/availableAgentCount"}, method = RequestMethod.GET)
     public HttpEntity<String> getAvailableAgentCount(User user,
                                                      @RequestParam(value = "targetRegion") String targetRegion) {

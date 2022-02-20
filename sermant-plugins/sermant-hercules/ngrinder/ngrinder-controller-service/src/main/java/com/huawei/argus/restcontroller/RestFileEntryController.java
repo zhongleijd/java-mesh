@@ -19,10 +19,11 @@
 package com.huawei.argus.restcontroller;
 
 import com.alibaba.fastjson.JSONObject;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
-import org.ngrinder.common.controller.RestAPI;
 import org.ngrinder.common.util.HttpContainerContext;
 import org.ngrinder.model.User;
 import org.ngrinder.script.model.FileEntry;
@@ -53,6 +54,7 @@ import java.util.Map;
 
 import static org.ngrinder.common.util.ExceptionUtils.processException;
 
+@Api(tags = "Script管理")
 @RestController
 @RequestMapping("/rest/api")
 public class RestFileEntryController extends RestBaseController {
@@ -75,6 +77,7 @@ public class RestFileEntryController extends RestBaseController {
      * @param path path looking for.
      * @return script/list
      */
+    @ApiOperation(tags = "Script管理", httpMethod = "GET", value = "查询所有Script")
     @RequestMapping(value = {"/scripts"}, method = RequestMethod.GET)
     public JSONObject getAllListModel(User user, @RequestParam(required = false) String path) {
         path = StringUtils.trimToEmpty(path);
@@ -96,8 +99,9 @@ public class RestFileEntryController extends RestBaseController {
      * @param folderName folderName
      * @return redirect:/script/${user}/${path}
      */
+    @ApiOperation(tags = "Script管理", httpMethod = "POST", value = "添加文件夹")
     @RequestMapping(value = "/folder", method = RequestMethod.POST)
-    public Map<String, Object> addFolder(User user, @RequestParam String path, @RequestParam("folderName") String folderName) { // "fileName"
+    public Map<String, Object> addFolder(User user, @RequestParam("path") String path, @RequestParam("folderName") String folderName) { // "fileName"
         try {
             fileEntryService.addFolder(user, StringUtils.trimToEmpty(path), StringUtils.trimToEmpty(folderName));
         } catch (IOException e) {
@@ -114,6 +118,7 @@ public class RestFileEntryController extends RestBaseController {
      * @param content  脚本内容
      * @return 响应
      */
+    @ApiOperation(tags = "Script管理", httpMethod = "POST", value = "创建一个Script")
     @RequestMapping(value = "/script", method = RequestMethod.POST)
     public Map<String, Object> createNewScript(User user, @RequestParam String filePath, @RequestBody String content) {
         FileEntry fileEntry = new FileEntry();
@@ -136,6 +141,7 @@ public class RestFileEntryController extends RestBaseController {
      * @param path user
      * @return script/editor
      */
+    @ApiOperation(tags = "Script管理", httpMethod = "GET", value = "查询指定路径脚本信息")
     @RequestMapping(value = "/script", method = RequestMethod.GET)
     public FileEntry getOne(User user, @RequestParam String path) throws IOException {
         FileEntry script = fileEntryService.getSpecifyScript(user, path);
@@ -151,6 +157,7 @@ public class RestFileEntryController extends RestBaseController {
      * @param path     user
      * @param response response
      */
+    @ApiOperation(tags = "Script管理", httpMethod = "GET", value = "下载指定Script")
     @RequestMapping("/download/script")
     public void download(User user, @RequestParam String path, HttpServletResponse response) throws IOException {
         FileEntry fileEntry = fileEntryService.getSpecifyScript(user, path);
@@ -188,6 +195,7 @@ public class RestFileEntryController extends RestBaseController {
      * @param path 脚本全路径
      * @return 判断结果
      */
+    @ApiOperation(tags = "Script管理", httpMethod = "GET", value = "判断脚本是否存在")
     @RequestMapping(value = "/exist/script", method = RequestMethod.GET)
     public Map<String, Object> hasScript(User user, @RequestParam String path) {
         if (StringUtils.isEmpty(path)) {
@@ -211,6 +219,7 @@ public class RestFileEntryController extends RestBaseController {
      * @param file multi part file
      * @return redirect:/script/list/${path}
      */
+    @ApiOperation(tags = "Script管理", httpMethod = "POST", value = "指定路径上传Script")
     @RequestMapping(value = "/upload/script", method = RequestMethod.POST, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public Map<String, Object> uploadFile(User user, @RequestParam String path, @RequestPart("uploadFile") MultipartFile file) {
         try {
@@ -229,7 +238,7 @@ public class RestFileEntryController extends RestBaseController {
         fileEntryService.saveFile(user, fileEntry);
     }
 
-    @RestAPI
+    @ApiOperation(tags = "Script管理", httpMethod = "DELETE", value = "批量删除指定脚本")
     @RequestMapping(value = "/script", method = RequestMethod.DELETE)
     public Map<String, Object> deleteApi(User user, @RequestParam String path, @RequestParam("files") String filesString) {
         String[] fileNames = filesString.split(",");
@@ -267,8 +276,8 @@ public class RestFileEntryController extends RestBaseController {
      * @param hostString hostString
      * @return validation Result string
      */
+    @ApiOperation(tags = "Script管理", httpMethod = "POST", value = "判断脚本是否有效")
     @RequestMapping(value = "/validate/script", method = RequestMethod.POST)
-    @RestAPI
     public HttpEntity<String> validate(User user, FileEntry fileEntry,
                                        @RequestParam(value = "hostString", required = false) String hostString) {
         String cont = fileEntry.getContent();
