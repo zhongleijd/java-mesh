@@ -56,7 +56,7 @@ public class MonitorHostDTO {
     /**
      * 是否监控jvm数据
      */
-    private Boolean isMonitorJvm;
+    private boolean isMonitorJvm;
 
     /**
      * jvm类型
@@ -113,11 +113,11 @@ public class MonitorHostDTO {
         this.host = host;
     }
 
-    public Boolean getMonitorJvm() {
+    public boolean getMonitorJvm() {
         return isMonitorJvm;
     }
 
-    public void setMonitorJvm(Boolean monitorJvm) {
+    public void setMonitorJvm(boolean monitorJvm) {
         isMonitorJvm = monitorJvm;
     }
 

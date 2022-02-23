@@ -69,14 +69,14 @@ public class MonitorController {
     private String bucket;
 
     @GetMapping("/monitor")
-    public MonitorModel getMonitorInfo(@RequestParam MonitorHostDTO monitorHostDTO) {
+    public MonitorModel getMonitorInfo(MonitorHostDTO monitorHostDTO) {
         LOGGER.debug("Monitor param:{}", monitorHostDTO);
         monitorHostDTO.setBucket(bucket);
         MonitorModel monitorModel = new MonitorModel();
-        JSONObject perfTestInfo = perfTestService.getOne(monitorHostDTO.getTestId());
+/*        JSONObject perfTestInfo = perfTestService.getOne(monitorHostDTO.getTestId());
         JSONArray monitorHosts = perfTestInfo.getJSONArray(TaskInfoKey.MONITORING_HOST.getServerKey());
         initJvmConfig(monitorHostDTO, monitorHosts);
-        initMonitoredServiceConfig(monitorHostDTO);
+        initMonitoredServiceConfig(monitorHostDTO);*/
         IMetricNode allMonitorData = monitorService.getAllMonitorData(monitorHostDTO);
         monitorModel.setSuccess(true);
         monitorModel.setData(allMonitorData);

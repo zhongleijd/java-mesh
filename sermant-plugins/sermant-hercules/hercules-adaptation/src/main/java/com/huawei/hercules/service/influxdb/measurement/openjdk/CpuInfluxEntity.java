@@ -30,4 +30,12 @@ public class CpuInfluxEntity extends CommonMetricInfluxEntity {
 
     @Column(name = "usage_percent")
     private Double usagePercent;
+
+    public Double getUsagePercent() {
+        return usagePercent;
+    }
+
+    public void setUsagePercent(Double usagePercent) {
+        this.usagePercent = usagePercent;
+    }
 }

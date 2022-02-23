@@ -44,7 +44,9 @@ public class MetricQueryServiceLoader {
     @PostConstruct
     public void init() {
         for (MetricType metricType : MetricType.values()) {
-            CommonMetricQueryService metricQueryService = new CommonMetricQueryService(metricType, influxDBSqlExecutor);
+            CommonMetricQueryService metricQueryService = new CommonMetricQueryService(metricType,
+                    influxDBSqlExecutor,
+                    metricType.getDataClassType());
             metricQueryServices.put(metricType, metricQueryService);
         }
     }

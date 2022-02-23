@@ -37,26 +37,58 @@ public class MonitorDataController {
     public static void main(final String[] args) {
 
         // You can generate an API token from the "API Tokens Tab" in the UI
-        String token = "huawei-token";
+        String token = "EsKTd2wneyLAAM_mpTZXEV6BSUSLAu-QEjzUEr9m6amfz95ZdBgvVNSCdLMAsNWpZTVrbgwq1NtfNzjt5FFV5g==";
         String bucket = "public";
         String org = "huawei";
 
-        InfluxDBClient client = InfluxDBClientFactory.create("http://100.94.169.124:8086", token.toCharArray());
-        Point point = Point
-            .measurement("mem")
-            .addTag("host", "host1")
-            .addField("used_percent", 23.43234543)
-            .time(Instant.now(), WritePrecision.NS);
-
-        WriteApiBlocking writeApi = client.getWriteApiBlocking();
-        writeApi.writePoint(bucket, org, point);
+        InfluxDBClient client = InfluxDBClientFactory.create("http://localhost:8086", token.toCharArray());
+        for (int i = 0; i < 10; i++) {
+            Point point = Point.measurement("server_monitor_cpu")
+                .addTag("service", "service" + i)
+                .addTag("service_instance", "service_instance" + i)
+                .addField("idle_percentage", 100)
+                .addField("io_wait_percentage", 200)
+                .addField("sys_percentage", 300)
+                .addField("user_percentage", 400)
+                .time(Instant.now(), WritePrecision.NS);
+            WriteApiBlocking writeApi = client.getWriteApiBlocking();
+            writeApi.writePoint(bucket, org, point);
+        }
+        for (int i = 0; i < 10; i++) {
+            Point point = Point.measurement("server_monitor_memory")
+                .addTag("service", "service" + i)
+                .addTag("service_instance", "service_instance" + i)
+                .addField("memory_total", 100)
+                .addField("swap_cached", 200)
+                .addField("cached", 300)
+                .addField("buffers", 400)
+                .addField("memory_used", 400)
+                .time(Instant.now(), WritePrecision.NS);
+            WriteApiBlocking writeApi = client.getWriteApiBlocking();
+            writeApi.writePoint(bucket, org, point);
+        }
+        for (int i = 0; i < 10; i++) {
+            Point point = Point.measurement("server_monitor_network")
+                .addTag("service", "service" + i)
+                .addTag("service_instance", "service_instance" + i)
+                .addField("read_bytes_per_second", 100)
+                .addField("write_bytes_per_second", 200)
+                .addField("read_packages_per_second", 300)
+                .addField("write_packages_per_second", 400)
+                .time(Instant.now(), WritePrecision.NS);
+            WriteApiBlocking writeApi = client.getWriteApiBlocking();
+            writeApi.writePoint(bucket, org, point);
+        }
         String query = "from(bucket: \"public\") |> range(start: -10h)";
-        List<FluxTable> tables = client.getQueryApi().query(query, org);
-
-        for (FluxTable table : tables) {
-            for (FluxRecord record : table.getRecords()) {
-                System.out.println(record);
-            }
+        // List<FluxTable> tables = client.getQueryApi().query(query, org);
+        // for (FluxTable table : tables) {
+        //    for (FluxRecord record : table.getRecords()) {
+        //        System.out.println(record);
+        //    }
+        // }
+        List<CpuInfluxEntity> tables = client.getQueryApi().query(query, org, CpuInfluxEntity.class);
+        for (CpuInfluxEntity table : tables) {
+            System.out.println(table);
         }
         client.close();
     }

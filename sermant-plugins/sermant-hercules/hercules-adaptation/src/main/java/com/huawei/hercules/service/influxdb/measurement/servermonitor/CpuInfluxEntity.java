@@ -31,23 +31,55 @@ public class CpuInfluxEntity extends CommonMetricInfluxEntity {
      * idle时间百分占比
      */
     @Column(name = "idle_percentage")
-    private Long idlePercentage;
+    private long idlePercentage;
 
     /**
      * io wait时间百分占比
      */
     @Column(name = "io_wait_percentage")
-    private Long ioWaitPercentage;
+    private long ioWaitPercentage;
 
     /**
      * sys时间百分占比
      */
     @Column(name = "sys_percentage")
-    private Long sysPercentage;
+    private long sysPercentage;
 
     /**
      * user和nice时间百分占比
      */
     @Column(name = "user_percentage")
-    private Long userPercentage;
+    private long userPercentage;
+
+    public long getIdlePercentage() {
+        return idlePercentage;
+    }
+
+    public void setIdlePercentage(long idlePercentage) {
+        this.idlePercentage = idlePercentage;
+    }
+
+    public long getIoWaitPercentage() {
+        return ioWaitPercentage;
+    }
+
+    public void setIoWaitPercentage(long ioWaitPercentage) {
+        this.ioWaitPercentage = ioWaitPercentage;
+    }
+
+    public long getSysPercentage() {
+        return sysPercentage;
+    }
+
+    public void setSysPercentage(long sysPercentage) {
+        this.sysPercentage = sysPercentage;
+    }
+
+    public long getUserPercentage() {
+        return userPercentage;
+    }
+
+    public void setUserPercentage(long userPercentage) {
+        this.userPercentage = userPercentage;
+    }
 }

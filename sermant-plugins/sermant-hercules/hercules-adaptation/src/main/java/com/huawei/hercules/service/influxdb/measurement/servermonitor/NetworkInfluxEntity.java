@@ -50,4 +50,36 @@ public class NetworkInfluxEntity extends CommonMetricInfluxEntity {
      */
     @Column(name = "write_packages_per_second")
     private Long writePackagesPerSec;
+
+    public Long getReadBytesPerSec() {
+        return readBytesPerSec;
+    }
+
+    public void setReadBytesPerSec(Long readBytesPerSec) {
+        this.readBytesPerSec = readBytesPerSec;
+    }
+
+    public Long getWriteBytesPerSec() {
+        return writeBytesPerSec;
+    }
+
+    public void setWriteBytesPerSec(Long writeBytesPerSec) {
+        this.writeBytesPerSec = writeBytesPerSec;
+    }
+
+    public Long getReadPackagesPerSec() {
+        return readPackagesPerSec;
+    }
+
+    public void setReadPackagesPerSec(Long readPackagesPerSec) {
+        this.readPackagesPerSec = readPackagesPerSec;
+    }
+
+    public Long getWritePackagesPerSec() {
+        return writePackagesPerSec;
+    }
+
+    public void setWritePackagesPerSec(Long writePackagesPerSec) {
+        this.writePackagesPerSec = writePackagesPerSec;
+    }
 }

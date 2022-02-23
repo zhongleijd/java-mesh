@@ -31,4 +31,20 @@ public abstract class GCInfluxEntity extends CommonMetricInfluxEntity {
 
     @Column(name = "gc_time")
     private Long gcTime;
+
+    public Long getGcCount() {
+        return gcCount;
+    }
+
+    public void setGcCount(Long gcCount) {
+        this.gcCount = gcCount;
+    }
+
+    public Long getGcTime() {
+        return gcTime;
+    }
+
+    public void setGcTime(Long gcTime) {
+        this.gcTime = gcTime;
+    }
 }

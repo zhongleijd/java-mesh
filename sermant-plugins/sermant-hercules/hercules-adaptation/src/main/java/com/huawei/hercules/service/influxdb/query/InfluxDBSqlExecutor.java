@@ -16,31 +16,45 @@
 
 package com.huawei.hercules.service.influxdb.query;
 
+import com.huawei.hercules.config.InfluxDBConfig;
+import com.huawei.hercules.service.influxdb.InfluxV2ResultMapper;
 import com.influxdb.client.InfluxDBClient;
 import com.influxdb.client.QueryApi;
+import com.influxdb.query.FluxRecord;
+import com.influxdb.query.FluxTable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * 功能描述：执行sql，返回执行的类型列表数据
  *
- * 
  * @since 2021-11-14
  */
 @Service
 public class InfluxDBSqlExecutor {
     /**
+     * 日志
+     */
+    private static final Logger LOGGER = LoggerFactory.getLogger(InfluxDBSqlExecutor.class);
+
+    /**
      * influxdb client
      */
     @Autowired
     private InfluxDBClient influxDBClient;
+
+    @Autowired
+    private InfluxDBConfig influxDBConfig;
 
     /**
      * query api for influxdb
@@ -56,12 +70,46 @@ public class InfluxDBSqlExecutor {
      * 执行sql，返回泛型指定类型的列表数据
      *
      * @param conditionSql sql语句
+     * @param clazz        数据类型
+     * @param <T>          数据类型
      * @return 列表集合
      */
-    public List<?> execute(String conditionSql, Class<?> measurementType) {
-        if (StringUtils.isEmpty(conditionSql) || measurementType == null) {
+    public <T> List<T> execute(String conditionSql, Class<T> clazz) {
+        if (StringUtils.isEmpty(conditionSql) || clazz == null) {
             return Collections.emptyList();
         }
-        return queryApi.query(conditionSql, measurementType);
+        List<FluxTable> tables = queryApi.query(conditionSql, influxDBConfig.getOrg());
+        List<T> recordsList = new ArrayList<>();
+        InfluxV2ResultMapper influxV2ResultMapper = new InfluxV2ResultMapper();
+        int dataCount = tables.get(0).getRecords().size();
+
+        for (int i = 0; i < dataCount; i++) {
+            try {
+                T entityInstance = clazz.newInstance();
+                for (FluxTable fluxTable : tables) {
+                    FluxRecord oneRecord = fluxTable.getRecords().get(i);
+                    influxV2ResultMapper.fillPojo(oneRecord, entityInstance, getEntityField(clazz));
+                }
+                recordsList.add(entityInstance);
+            } catch (InstantiationException | IllegalAccessException e) {
+                LOGGER.error("Create entity instance fail.", e);
+            }
+        }
+        return recordsList;
+    }
+
+    /**
+     * 获取一个类型所有定义的属性名称
+     *
+     * @param clazz 类型
+     * @return 类型所有的属性名称
+     */
+    private List<Field> getEntityField(Class<?> clazz) {
+        if (clazz == null) {
+            return Collections.emptyList();
+        }
+        List<Field> fields = new ArrayList<>(Arrays.asList(clazz.getDeclaredFields()));
+        fields.addAll(getEntityField(clazz.getSuperclass()));
+        return fields;
     }
 }

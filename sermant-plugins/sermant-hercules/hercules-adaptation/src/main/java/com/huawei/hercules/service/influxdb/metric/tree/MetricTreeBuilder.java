@@ -68,7 +68,7 @@ public class MetricTreeBuilder {
      * @return metric查询服务
      */
     public IMetricNode buildMetricTree(MonitorHostDTO monitorHostDTO) {
-        CommonMetricNode rootMetricNode = new CommonMetricNode(MetricType.ROOT, null, null);
+        CommonMetricNode rootMetricNode = new CommonMetricNode(MetricType.TOTAL, null, null);
         rootMetricNode.initMetric(metrics, monitorHostDTO);
         return rootMetricNode;
     }

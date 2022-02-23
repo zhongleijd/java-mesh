@@ -24,7 +24,6 @@ import java.util.List;
 /**
  * 功能描述：指标查询服务
  *
- * 
  * @since 2021-11-18
  */
 public interface IMetricQueryService {

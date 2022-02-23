@@ -19,6 +19,7 @@
 package com.huawei.hercules.service.influxdb.measurement;
 
 import com.influxdb.annotations.Column;
+import org.springframework.util.StringUtils;
 
 import java.time.Instant;
 
@@ -26,7 +27,7 @@ import java.time.Instant;
  * 通用Influxdb持久化实体
  */
 public abstract class CommonMetricInfluxEntity {
-    @Column(timestamp = true)
+    @Column(timestamp = true, name = "_time")
     private Instant time;
 
     @Column(tag = true, name = "service")
@@ -34,4 +35,28 @@ public abstract class CommonMetricInfluxEntity {
 
     @Column(tag = true, name = "service_instance")
     private String serviceInstance;
+
+    public String getTime() {
+        return time.getEpochSecond() +""+ time.getNano();
+    }
+
+    public void setTime(Instant time) {
+        this.time = time;
+    }
+
+    public String getService() {
+        return service;
+    }
+
+    public void setService(String service) {
+        this.service = service;
+    }
+
+    public String getServiceInstance() {
+        return serviceInstance;
+    }
+
+    public void setServiceInstance(String serviceInstance) {
+        this.serviceInstance = serviceInstance;
+    }
 }

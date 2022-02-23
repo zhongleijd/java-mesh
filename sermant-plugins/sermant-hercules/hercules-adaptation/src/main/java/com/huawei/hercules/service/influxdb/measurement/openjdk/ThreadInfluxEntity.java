@@ -36,4 +36,28 @@ public class ThreadInfluxEntity extends CommonMetricInfluxEntity {
 
     @Column(name = "peak_count")
     private Long peakCount;
+
+    public Long getLiveCount() {
+        return liveCount;
+    }
+
+    public void setLiveCount(Long liveCount) {
+        this.liveCount = liveCount;
+    }
+
+    public Long getDaemonCount() {
+        return daemonCount;
+    }
+
+    public void setDaemonCount(Long daemonCount) {
+        this.daemonCount = daemonCount;
+    }
+
+    public Long getPeakCount() {
+        return peakCount;
+    }
+
+    public void setPeakCount(Long peakCount) {
+        this.peakCount = peakCount;
+    }
 }

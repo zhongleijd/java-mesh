@@ -56,4 +56,44 @@ public class MemoryInfluxEntity extends CommonMetricInfluxEntity {
      */
     @Column(name ="memory_used")
     private Long memoryUsed;
+
+    public Long getMemoryTotal() {
+        return memoryTotal;
+    }
+
+    public void setMemoryTotal(Long memoryTotal) {
+        this.memoryTotal = memoryTotal;
+    }
+
+    public Long getSwapCached() {
+        return swapCached;
+    }
+
+    public void setSwapCached(Long swapCached) {
+        this.swapCached = swapCached;
+    }
+
+    public Long getCached() {
+        return cached;
+    }
+
+    public void setCached(Long cached) {
+        this.cached = cached;
+    }
+
+    public Long getBuffers() {
+        return buffers;
+    }
+
+    public void setBuffers(Long buffers) {
+        this.buffers = buffers;
+    }
+
+    public Long getMemoryUsed() {
+        return memoryUsed;
+    }
+
+    public void setMemoryUsed(Long memoryUsed) {
+        this.memoryUsed = memoryUsed;
+    }
 }

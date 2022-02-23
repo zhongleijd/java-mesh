@@ -49,22 +49,22 @@ public enum MetricType {
     /**
      * 性能监控根指标
      */
-    ROOT("root", false, null, JvmType.NONE, null),
+    TOTAL("total", false, null, JvmType.NONE, null),
 
     /**
      * 服务器指标
      */
-    SERVER("server", false, ROOT, JvmType.NONE, null),
+    SERVER("server", false, TOTAL, JvmType.NONE, null),
 
     /**
      * jvm中，ibm类型的jvm指标
      */
-    IBM("ibm", false, ROOT, JvmType.IBM, null),
+    IBM("ibm", false, TOTAL, JvmType.IBM, null),
 
     /**
      * jvm中，open_jdk类型的jvm指标
      */
-    OPEN_JDK("open_jdk", false, ROOT, JvmType.OPEN_JDK, null),
+    OPEN_JDK("open_jdk", false, TOTAL, JvmType.OPEN_JDK, null),
 
     /**
      * ibm类型中的cs指标
@@ -174,17 +174,17 @@ public enum MetricType {
     /**
      * SERVER指标CPU
      */
-    SERVER_CPU("server_monitor_cpu", true, OPENJDK_POOL, JvmType.OPEN_JDK, com.huawei.hercules.service.influxdb.measurement.servermonitor.CpuInfluxEntity.class),
+    SERVER_CPU("server_monitor_cpu", true, SERVER, JvmType.NONE, com.huawei.hercules.service.influxdb.measurement.servermonitor.CpuInfluxEntity.class),
 
     /**
      * SERVER指标MEMORY
      */
-    SERVER_MEMORY("server_monitor_memory", true, OPENJDK_POOL, JvmType.OPEN_JDK, MemoryInfluxEntity.class),
+    SERVER_MEMORY("server_monitor_memory", true, SERVER, JvmType.NONE, MemoryInfluxEntity.class),
 
     /**
      * SERVER指标NETWORK
      */
-    SERVER_NETWORK("server_monitor_network", true, OPENJDK_POOL, JvmType.OPEN_JDK, NetworkInfluxEntity.class);
+    SERVER_NETWORK("server_monitor_network", true, SERVER, JvmType.NONE, NetworkInfluxEntity.class);
 
     /**
      * 类型名称

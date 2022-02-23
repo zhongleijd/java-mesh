@@ -29,7 +29,6 @@ import java.util.Locale;
 /**
  * 功能描述：query metric base class
  *
- * 
  * @since 2021-11-19
  */
 public class CommonMetricQueryService implements IMetricQueryService {
@@ -38,10 +37,10 @@ public class CommonMetricQueryService implements IMetricQueryService {
      */
     private final String baseSql = "from(bucket:\"%s\")" +
             "|> range(" +
-            "   start : %s , stop : %s " +
+            "   start : %s %s " +
             ")" +
             "|> filter( fn: (r) => " +
-            "   r._measurement == \"%s\" and r.service == \"%s\" and serviceInstance == \"%s\"" +
+            "   r._measurement == \"%s\" and r.service == \"%s\" and r.service_instance == \"%s\"" +
             ")";
 
     /**
@@ -55,11 +54,18 @@ public class CommonMetricQueryService implements IMetricQueryService {
     private final InfluxDBSqlExecutor influxDBSqlExecutor;
 
     /**
+     * 数据实例类型
+     */
+    private Class<?> dataEntityClass;
+
+    /**
      * init metric type and child metric
      *
      * @param metricType this metric type
      */
-    public CommonMetricQueryService(MetricType metricType, InfluxDBSqlExecutor influxDBSqlExecutor) {
+    public CommonMetricQueryService(MetricType metricType,
+                                    InfluxDBSqlExecutor influxDBSqlExecutor,
+                                    Class<?> dataEntityClass) {
         if (StringUtils.isEmpty(metricType)) {
             throw new HerculesException("Metric type can not be empty.");
         }
@@ -68,6 +74,7 @@ public class CommonMetricQueryService implements IMetricQueryService {
         }
         this.influxDBSqlExecutor = influxDBSqlExecutor;
         this.metricType = metricType;
+        this.dataEntityClass = dataEntityClass;
     }
 
     @Override
@@ -77,7 +84,7 @@ public class CommonMetricQueryService implements IMetricQueryService {
 
     @Override
     public List<?> getMetricData(MonitorHostDTO monitorHostDTO) {
-        return influxDBSqlExecutor.execute(buildSql(monitorHostDTO), getDataType());
+        return influxDBSqlExecutor.execute(buildSql(monitorHostDTO), dataEntityClass);
     }
 
     /**
@@ -98,18 +105,9 @@ public class CommonMetricQueryService implements IMetricQueryService {
                 baseSql,
                 monitorHostDTO.getBucket(),
                 monitorHostDTO.getStartTime(),
-                monitorHostDTO.getEndTime(),
+                StringUtils.isEmpty(monitorHostDTO.getEndTime()) ? "" : ", stop : " + monitorHostDTO.getEndTime(),
                 metricType.getName(),
                 monitorHostDTO.getService(),
                 monitorHostDTO.getServiceInstance());
-    }
-
-    /**
-     * get the java bean type of data
-     *
-     * @return the java bean type of data
-     */
-    public Class<?> getDataType() {
-        return metricType.getDataClassType();
     }
 }
