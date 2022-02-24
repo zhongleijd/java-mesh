@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-package com.huawei.argus.restcontroller;
+package com.huawei.argus.service.influxdb;
 
 import com.influxdb.annotations.Column;
 import com.influxdb.query.FluxRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Field;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -41,9 +43,10 @@ public class InfluxV2ResultMapper {
      *
      * @param record 记录值
      * @param pojo   实体实力
+     * @param fields 实例对应的属性列表
      * @param <T>    实体泛型
      */
-    public <T> void fillPojo(FluxRecord record, T pojo) {
+    public <T> void fillPojo(FluxRecord record, T pojo, List<Field> fields) {
         if (record == null) {
             LOGGER.error("Record is required");
             return;
@@ -53,30 +56,50 @@ public class InfluxV2ResultMapper {
             return;
         }
         try {
-            Field[] fields = pojo.getClass().getDeclaredFields();
             Map<String, Object> recordValues = record.getValues();
             for (Field field : fields) {
                 Column columnAnnotation = field.getAnnotation(Column.class);
                 String columnName = field.getName();
-                if (columnAnnotation != null && !columnAnnotation.name().isEmpty()) {
-                    columnName = columnAnnotation.name();
-                }
-                String col;
                 if (recordValues.containsKey(columnName)) {
-                    col = columnName;
-                } else if (recordValues.containsKey("_" + columnName)) {
-                    col = "_" + columnName;
-                } else if (recordValues.get("_field").equals(columnName)) {
-                    col = "_value";
-                } else {
-                    LOGGER.error("The {} can not match any value in record[{}].", columnName, record);
+                    setFieldValue(field, pojo, recordValues.get(columnName));
                     continue;
                 }
-                Object value = record.getValueByKey(col);
-                field.set(pojo, value);
+                if (columnAnnotation == null) {
+                    continue;
+                }
+                String columnAnnotationName = columnAnnotation.name();
+                if (StringUtils.isEmpty(columnAnnotationName)) {
+                    continue;
+                }
+                if (recordValues.containsKey(columnAnnotationName)) {
+                    setFieldValue(field, pojo, recordValues.get(columnAnnotationName));
+                    continue;
+                }
+                Object influxdbFieldName = recordValues.get("_field");
+                if (columnName.equals(influxdbFieldName)
+                        || columnAnnotationName.equals(influxdbFieldName)) {
+                    setFieldValue(field, pojo, recordValues.get("_value"));
+                }
             }
         } catch (Exception exception) {
             throw new RuntimeException(exception);
         }
+    }
+
+    /**
+     * 设置数据实例对应的字段值
+     *
+     * @param field      字段
+     * @param instance   字段所属的实例
+     * @param filedValue 字段值
+     * @throws IllegalAccessException 反射调用异常
+     */
+    private void setFieldValue(Field field, Object instance, Object filedValue) throws IllegalAccessException {
+        if (field == null || instance == null) {
+            LOGGER.error("Set entity instance field error, field={}, value={}", field, filedValue);
+            return;
+        }
+        field.setAccessible(true);
+        field.set(instance, filedValue);
     }
 }
