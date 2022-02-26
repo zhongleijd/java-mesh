@@ -269,14 +269,14 @@ public class AgentPackageService {
 
     private void addAgentConfToTar(TarArchiveOutputStream tarOutputStream, String basePath) {
         try {
-            writeFileToTar(tarOutputStream, basePath, "ngrinder_agent_home_template/__agent.conf");
-            writeFileToTar(tarOutputStream, basePath, "ngrinder_sh/agent/run_agent.bat");
-            writeFileToTar(tarOutputStream, basePath, "ngrinder_sh/agent/run_agent.sh");
-            writeFileToTar(tarOutputStream, basePath, "ngrinder_sh/agent/run_agent_bg.sh");
-            writeFileToTar(tarOutputStream, basePath, "ngrinder_sh/agent/run_agent_internal.bat");
-            writeFileToTar(tarOutputStream, basePath, "ngrinder_sh/agent/run_agent_internal.sh");
-            writeFileToTar(tarOutputStream, basePath, "ngrinder_sh/agent/stop_agent.bat");
-            writeFileToTar(tarOutputStream, basePath, "ngrinder_sh/agent/stop_agent.sh");
+            writeFileToTar(tarOutputStream, basePath, "ngrinder_agent_home_template/__agent.conf", TarArchiveEntry.DEFAULT_FILE_MODE);
+            writeFileToTar(tarOutputStream, basePath, "ngrinder_sh/agent/run_agent.bat", EXEC);
+            writeFileToTar(tarOutputStream, basePath, "ngrinder_sh/agent/run_agent.sh", EXEC);
+            writeFileToTar(tarOutputStream, basePath, "ngrinder_sh/agent/run_agent_bg.sh", EXEC);
+            writeFileToTar(tarOutputStream, basePath, "ngrinder_sh/agent/run_agent_internal.bat", EXEC);
+            writeFileToTar(tarOutputStream, basePath, "ngrinder_sh/agent/run_agent_internal.sh", EXEC);
+            writeFileToTar(tarOutputStream, basePath, "ngrinder_sh/agent/stop_agent.bat", EXEC);
+            writeFileToTar(tarOutputStream, basePath, "ngrinder_sh/agent/stop_agent.sh", EXEC);
         } catch (Exception e) {
             LOGGER.error("Add config file to agent tar failed when package!");
         }
@@ -284,7 +284,8 @@ public class AgentPackageService {
 
     private void writeFileToTar(TarArchiveOutputStream tarOutputStream,
                                 String basePath,
-                                String jarEntryIdentify) throws IOException {
+                                String jarEntryIdentify,
+                                int mode) throws IOException {
         // 如果直接拿不到文件，说明是在被依赖的jar包中，所以添加一层打成jar包的依赖目录，这里只作为springboot的依赖路径BOOT-INF/处理，其他情况不考虑
         URL resource = getClass().getClassLoader().getResource(jarEntryIdentify);
         if (resource == null) {
@@ -297,7 +298,7 @@ public class AgentPackageService {
             byte[] dataBytes = getDataBytes(configInputStream);
             String fileName = new File(jarEntryIdentify).getName();
             addInputStreamToTar(tarOutputStream, new ByteArrayInputStream(dataBytes), basePath + fileName,
-                dataBytes.length, TarArchiveEntry.DEFAULT_FILE_MODE);
+                dataBytes.length, mode);
         }
     }
 
