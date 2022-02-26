@@ -252,9 +252,7 @@ public class AgentPackageService {
                 addAgentConfToTar(tarOutputStream, basePath);
                 Set<String> libs = getDependentLibs();
                 if ("file".equals(Config.RUN_PROTOCOL)) {
-                    for (URL eachUrl : classLoader.getURLs()) {
-                        fileProtocolPackage(basePath, libPath, tarOutputStream, libs, eachUrl);
-                    }
+                    fileProtocolPackage(libPath, tarOutputStream, libs, classLoader.getURLs());
                 } else if ("jar".equals(Config.RUN_PROTOCOL)) {
                     jarProtocolPackage(libPath, tarOutputStream, libs);
                 } else {
@@ -271,7 +269,7 @@ public class AgentPackageService {
 
     private void addAgentConfToTar(TarArchiveOutputStream tarOutputStream, String basePath) {
         try {
-            writeFileToTar(tarOutputStream, basePath,"ngrinder_agent_home_template/__agent.conf");
+            writeFileToTar(tarOutputStream, basePath, "ngrinder_agent_home_template/__agent.conf");
             writeFileToTar(tarOutputStream, basePath, "ngrinder_sh/agent/run_agent.bat");
             writeFileToTar(tarOutputStream, basePath, "ngrinder_sh/agent/run_agent.sh");
             writeFileToTar(tarOutputStream, basePath, "ngrinder_sh/agent/run_agent_bg.sh");
@@ -356,28 +354,20 @@ public class AgentPackageService {
         return sb.toString().getBytes(StandardCharsets.UTF_8);
     }
 
-    private boolean fileProtocolPackage(String basePath,
-                                        String libPath,
-                                        TarArchiveOutputStream tarOutputStream,
-                                        Set<String> libs, URL eachUrl) throws IOException {
-        File eachClassPath = new File(eachUrl.getFile());
-        if (!isJar(eachClassPath)) {
-            return true;
-        }
-        if (isAgentDependentLib(eachClassPath, "ngrinder_sh")) {
-            processJarEntries(eachClassPath, new TarArchivingZipEntryProcessor(tarOutputStream, new FilePredicate() {
-                @Override
-                public boolean evaluate(Object object) {
-                    ZipEntry zipEntry = (ZipEntry) object;
-                    final String name = zipEntry.getName();
-                    return name.contains("agent") && (zipEntry.getName().endsWith("sh") ||
-                        zipEntry.getName().endsWith("bat"));
-                }
-            }, basePath, EXEC));
-        } else if (isAgentDependentLib(eachClassPath, libs)) {
+    private void fileProtocolPackage(String libPath,
+                                     TarArchiveOutputStream tarOutputStream,
+                                     Set<String> libs,
+                                     URL[] urls) throws IOException {
+        for (URL url : urls) {
+            File eachClassPath = new File(url.getFile());
+            if (!isJar(eachClassPath)) {
+                return;
+            }
+            if (!isAgentDependentLib(eachClassPath, libs)) {
+                return;
+            }
             addFileToTar(tarOutputStream, eachClassPath, libPath + eachClassPath.getName());
         }
-        return false;
     }
 
     private TarArchiveOutputStream createTarArchiveStream(File agentTar) throws IOException {
