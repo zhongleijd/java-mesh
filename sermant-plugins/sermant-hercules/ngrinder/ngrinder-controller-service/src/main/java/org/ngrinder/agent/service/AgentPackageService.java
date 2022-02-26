@@ -9,7 +9,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
-import org.jetbrains.annotations.Nullable;
 import org.ngrinder.infra.config.Config;
 import org.ngrinder.infra.schedule.ScheduledTaskService;
 import org.slf4j.Logger;
@@ -24,20 +23,14 @@ import javax.annotation.PostConstruct;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
-import java.net.JarURLConnection;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +40,6 @@ import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import static org.apache.commons.lang.StringUtils.countMatches;
 import static org.apache.commons.lang.StringUtils.isNotEmpty;
 import static org.apache.commons.lang.StringUtils.trimToEmpty;
 import static org.ngrinder.common.util.CollectionUtils.buildMap;
@@ -203,7 +195,7 @@ public class AgentPackageService {
                     if (!isJar(eachClassPath)) {
                         continue;
                     }
-                    if (isAgentDependentLib(eachClassPath, "ngrinder-sh")) {
+                    if (isAgentDependentLib(eachClassPath, "ngrinder_sh")) {
                         processJarEntries(eachClassPath, new TarArchivingZipEntryProcessor(tarOutputStream, new FilePredicate() {
                             @Override
                             public boolean evaluate(Object object) {
@@ -257,7 +249,7 @@ public class AgentPackageService {
                 tarOutputStream = createTarArchiveStream(agentTar);
                 addFolderToTar(tarOutputStream, basePath);
                 addFolderToTar(tarOutputStream, libPath);
-                addAgentConf(tarOutputStream, basePath);
+                addAgentConfToTar(tarOutputStream, basePath);
                 Set<String> libs = getDependentLibs();
                 if ("file".equals(Config.RUN_PROTOCOL)) {
                     for (URL eachUrl : classLoader.getURLs()) {
@@ -277,84 +269,33 @@ public class AgentPackageService {
         }
     }
 
-    private void addAgentConf(TarArchiveOutputStream tarOutputStream,
-                              String basePath) throws IOException {
-        ClassPathResource classPathResource = new ClassPathResource("");
-        URL baseUrl = classPathResource.getURL();
-        if ("file".equals(baseUrl.getProtocol())) {
-            addFileAgentConfToTar(tarOutputStream, basePath, baseUrl);
-            addFileAgentShellToTar(tarOutputStream, basePath, baseUrl);
-        } else if ("jar".equals(baseUrl.getProtocol())) {
-            addJarAgentConfToTar(tarOutputStream, basePath);
-        } else {
-            throw new IOException("Wrong protocol.");
-        }
-    }
-
-    private void addFileAgentShellToTar(TarArchiveOutputStream tarOutputStream, String basePath, URL url) throws IOException {
-        String filePath = url.getPath() + "ngrinder_agent_home_template/__agent.conf";
-        File file = new File(filePath);
-        if (!file.exists() || !file.isFile()) {
-            return;
-        }
-        addFileAgentInfoToTar(tarOutputStream, basePath, file);
-    }
-
-    private void addFileAgentConfToTar(TarArchiveOutputStream tarOutputStream, String basePath, URL url) throws IOException {
-        String filePath = url.getPath() + "ngrinder-sh/agent";
-        File file = new File(filePath);
-        if (!file.exists() || !file.isDirectory()) {
-            return;
-        }
-        File[] files = file.listFiles();
-        if (files == null) {
-            LOGGER.error("Not found any conf");
-            return;
-        }
-        for (File eachFile : files) {
-            eachFile.setExecutable(true, true);
-            addFileAgentInfoToTar(tarOutputStream, basePath, eachFile);
-        }
-    }
-
-    private void addFileAgentInfoToTar(TarArchiveOutputStream tarOutputStream, String basePath, File eachFile) throws IOException {
-        try (FileInputStream fileInputStream = new FileInputStream(eachFile)) {
-            byte[] dataBytes = getDataBytes(fileInputStream);
-            addInputStreamToTar(tarOutputStream, new ByteArrayInputStream(dataBytes), basePath + eachFile.getName(),
-                dataBytes.length, TarArchiveEntry.DEFAULT_FILE_MODE);
-        }
-    }
-
-    private void addJarAgentConfToTar(TarArchiveOutputStream tarOutputStream, String basePath) {
-        String urlPath = getMainJarFilePath();
-        if (urlPath == null) {
-            return;
-        }
-        try{
-            JarFile jarFile = new JarFile(urlPath);
-            writeFileToTar(tarOutputStream, basePath, jarFile, "ngrinder_agent_home_template/__agent.conf");
-            writeFileToTar(tarOutputStream, basePath, jarFile, "ngrinder-sh/agent/run_agent.bat");
-            writeFileToTar(tarOutputStream, basePath, jarFile, "ngrinder-sh/agent/run_agent.sh");
-            writeFileToTar(tarOutputStream, basePath, jarFile, "ngrinder-sh/agent/run_agent_bg.sh");
-            writeFileToTar(tarOutputStream, basePath, jarFile, "ngrinder-sh/agent/run_agent_internal.bat");
-            writeFileToTar(tarOutputStream, basePath, jarFile, "ngrinder-sh/agent/run_agent_internal.sh");
-            writeFileToTar(tarOutputStream, basePath, jarFile, "ngrinder-sh/agent/stop_agent.bat");
-            writeFileToTar(tarOutputStream, basePath, jarFile, "ngrinder-sh/agent/stop_agent.sh");
-        }catch (Exception e) {
+    private void addAgentConfToTar(TarArchiveOutputStream tarOutputStream, String basePath) {
+        try {
+            writeFileToTar(tarOutputStream, basePath,"ngrinder_agent_home_template/__agent.conf");
+            writeFileToTar(tarOutputStream, basePath, "ngrinder_sh/agent/run_agent.bat");
+            writeFileToTar(tarOutputStream, basePath, "ngrinder_sh/agent/run_agent.sh");
+            writeFileToTar(tarOutputStream, basePath, "ngrinder_sh/agent/run_agent_bg.sh");
+            writeFileToTar(tarOutputStream, basePath, "ngrinder_sh/agent/run_agent_internal.bat");
+            writeFileToTar(tarOutputStream, basePath, "ngrinder_sh/agent/run_agent_internal.sh");
+            writeFileToTar(tarOutputStream, basePath, "ngrinder_sh/agent/stop_agent.bat");
+            writeFileToTar(tarOutputStream, basePath, "ngrinder_sh/agent/stop_agent.sh");
+        } catch (Exception e) {
             LOGGER.error("Add config file to agent tar failed when package!");
         }
     }
 
     private void writeFileToTar(TarArchiveOutputStream tarOutputStream,
                                 String basePath,
-                                JarFile jarFile,
                                 String jarEntryIdentify) throws IOException {
         // 如果直接拿不到文件，说明是在被依赖的jar包中，所以添加一层打成jar包的依赖目录，这里只作为springboot的依赖路径BOOT-INF/处理，其他情况不考虑
-        JarEntry jarEntry = jarFile.getJarEntry("BOOT-INF/classes/" + jarEntryIdentify);
-        if (jarEntry == null) {
+        URL resource = getClass().getClassLoader().getResource(jarEntryIdentify);
+        if (resource == null) {
+            resource = getClass().getClassLoader().getResource("BOOT-INF/classes/" + jarEntryIdentify);
+        }
+        if (resource == null) {
             return;
         }
-        try (InputStream configInputStream = jarFile.getInputStream(jarEntry)) {
+        try (InputStream configInputStream = resource.openStream()) {
             byte[] dataBytes = getDataBytes(configInputStream);
             String fileName = new File(jarEntryIdentify).getName();
             addInputStreamToTar(tarOutputStream, new ByteArrayInputStream(dataBytes), basePath + fileName,
@@ -423,7 +364,7 @@ public class AgentPackageService {
         if (!isJar(eachClassPath)) {
             return true;
         }
-        if (isAgentDependentLib(eachClassPath, "ngrinder-sh")) {
+        if (isAgentDependentLib(eachClassPath, "ngrinder_sh")) {
             processJarEntries(eachClassPath, new TarArchivingZipEntryProcessor(tarOutputStream, new FilePredicate() {
                 @Override
                 public boolean evaluate(Object object) {
@@ -447,7 +388,7 @@ public class AgentPackageService {
     private void addMonitorConfToTar(TarArchiveOutputStream tarOutputStream, String basePath,
                                      Integer monitorPort) throws IOException {
         final String config = getAgentConfigContent("agent_monitor.conf", buildMap("monitorPort",
-            (Object) String.valueOf(monitorPort)));
+            String.valueOf(monitorPort)));
         final byte[] bytes = config.getBytes();
         addInputStreamToTar(tarOutputStream, new ByteArrayInputStream(bytes), basePath + "__agent.conf",
             bytes.length, TarArchiveEntry.DEFAULT_FILE_MODE);

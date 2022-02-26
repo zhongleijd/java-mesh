@@ -311,7 +311,7 @@
       protected void copyDefaultConfigurationFiles() throws IOException {
           checkNotNull(home);
           home.copyConfigFrom("ngrinder_home_template/");
-          home.copyAgentShell("ngrinder-sh/agent/");
+          home.copyAgentShell("ngrinder_sh/agent/");
           home.copyAgentConfigFile("ngrinder_agent_home_template/");
       }
 
