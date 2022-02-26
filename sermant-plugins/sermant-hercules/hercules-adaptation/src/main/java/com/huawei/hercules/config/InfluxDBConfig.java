@@ -42,10 +42,10 @@ public class InfluxDBConfig {
     @Value("${influxdb.token:123456}")
     private String token;
 
-    @Value("${influxdb.host:localhost}")
+    @Value("${influxdb.server.host:localhost}")
     private String host;
 
-    @Value("${influxdb.port:8086}")
+    @Value("${influxdb.server.port:8086}")
     private String port;
 
     private InfluxDBClient influxDBClient;

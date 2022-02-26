@@ -9,6 +9,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.jetbrains.annotations.Nullable;
 import org.ngrinder.infra.config.Config;
 import org.ngrinder.infra.schedule.ScheduledTaskService;
 import org.slf4j.Logger;
@@ -32,6 +33,10 @@ import java.net.JarURLConnection;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
@@ -42,6 +47,7 @@ import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import static org.apache.commons.lang.StringUtils.countMatches;
 import static org.apache.commons.lang.StringUtils.isNotEmpty;
 import static org.apache.commons.lang.StringUtils.trimToEmpty;
 import static org.ngrinder.common.util.CollectionUtils.buildMap;
@@ -279,9 +285,7 @@ public class AgentPackageService {
             addFileAgentConfToTar(tarOutputStream, basePath, baseUrl);
             addFileAgentShellToTar(tarOutputStream, basePath, baseUrl);
         } else if ("jar".equals(baseUrl.getProtocol())) {
-            JarURLConnection jarURLConnection = (JarURLConnection) baseUrl.openConnection();
-            addJarAgentConfToTar(tarOutputStream, basePath, jarURLConnection.getJarFile());
-            addJarAgentShellToTar(tarOutputStream, basePath, jarURLConnection.getJarFile());
+            addJarAgentConfToTar(tarOutputStream, basePath);
         } else {
             throw new IOException("Wrong protocol.");
         }
@@ -303,7 +307,12 @@ public class AgentPackageService {
             return;
         }
         File[] files = file.listFiles();
+        if (files == null) {
+            LOGGER.error("Not found any conf");
+            return;
+        }
         for (File eachFile : files) {
+            eachFile.setExecutable(true, true);
             addFileAgentInfoToTar(tarOutputStream, basePath, eachFile);
         }
     }
@@ -316,57 +325,78 @@ public class AgentPackageService {
         }
     }
 
-    private void addJarAgentConfToTar(TarArchiveOutputStream tarOutputStream,
-                                      String basePath,
-                                      JarFile jarFile) throws IOException {
-        JarEntry jarEntry = jarFile.getJarEntry("ngrinder_agent_home_template/__agent.conf");
+    private void addJarAgentConfToTar(TarArchiveOutputStream tarOutputStream, String basePath) {
+        String urlPath = getMainJarFilePath();
+        if (urlPath == null) {
+            return;
+        }
+        try{
+            JarFile jarFile = new JarFile(urlPath);
+            writeFileToTar(tarOutputStream, basePath, jarFile, "ngrinder_agent_home_template/__agent.conf");
+            writeFileToTar(tarOutputStream, basePath, jarFile, "ngrinder-sh/agent/run_agent.bat");
+            writeFileToTar(tarOutputStream, basePath, jarFile, "ngrinder-sh/agent/run_agent.sh");
+            writeFileToTar(tarOutputStream, basePath, jarFile, "ngrinder-sh/agent/run_agent_bg.sh");
+            writeFileToTar(tarOutputStream, basePath, jarFile, "ngrinder-sh/agent/run_agent_internal.bat");
+            writeFileToTar(tarOutputStream, basePath, jarFile, "ngrinder-sh/agent/run_agent_internal.sh");
+            writeFileToTar(tarOutputStream, basePath, jarFile, "ngrinder-sh/agent/stop_agent.bat");
+            writeFileToTar(tarOutputStream, basePath, jarFile, "ngrinder-sh/agent/stop_agent.sh");
+        }catch (Exception e) {
+            LOGGER.error("Add config file to agent tar failed when package!");
+        }
+    }
+
+    private void writeFileToTar(TarArchiveOutputStream tarOutputStream,
+                                String basePath,
+                                JarFile jarFile,
+                                String jarEntryIdentify) throws IOException {
+        // 如果直接拿不到文件，说明是在被依赖的jar包中，所以添加一层打成jar包的依赖目录，这里只作为springboot的依赖路径BOOT-INF/处理，其他情况不考虑
+        JarEntry jarEntry = jarFile.getJarEntry("BOOT-INF/classes/" + jarEntryIdentify);
+        if (jarEntry == null) {
+            return;
+        }
         try (InputStream configInputStream = jarFile.getInputStream(jarEntry)) {
             byte[] dataBytes = getDataBytes(configInputStream);
-            addInputStreamToTar(tarOutputStream, new ByteArrayInputStream(dataBytes), basePath + "__agent.conf",
+            String fileName = new File(jarEntryIdentify).getName();
+            addInputStreamToTar(tarOutputStream, new ByteArrayInputStream(dataBytes), basePath + fileName,
                 dataBytes.length, TarArchiveEntry.DEFAULT_FILE_MODE);
         }
     }
 
-    private void addJarAgentShellToTar(TarArchiveOutputStream tarOutputStream,
-                                       String basePath,
-                                       JarFile jarFile) throws IOException {
-        Enumeration<JarEntry> entries = jarFile.entries();
-        while (entries.hasMoreElements()) {
-            JarEntry jarEntry = entries.nextElement();
-            if (!jarEntry.getName().startsWith("ngrinder-sh/agent") || jarEntry.isDirectory()) {
-                continue;
-            }
-            String fileName = new File(jarEntry.getName()).getName();
-            try (InputStream configInputStream = jarFile.getInputStream(jarEntry)) {
-                byte[] dataBytes = getDataBytes(configInputStream);
-                addInputStreamToTar(tarOutputStream, new ByteArrayInputStream(dataBytes), basePath + fileName,
-                    dataBytes.length, TarArchiveEntry.DEFAULT_FILE_MODE);
-            }
+    private String getMainJarFilePath() {
+        URL url = this.getClass().getProtectionDomain().getCodeSource().getLocation();
+        String urlPath = url.getFile();
+        int indexOfJarFileStart = urlPath.indexOf("!/");
+        if (indexOfJarFileStart == -1) {
+            return null;
         }
+        urlPath = urlPath.substring(0, indexOfJarFileStart);
+        urlPath = urlPath.replace("file:", "");
+        return urlPath;
     }
 
     private void jarProtocolPackage(String libPath,
                                     TarArchiveOutputStream tarOutputStream,
-                                    Set<String> libs) throws IOException {
-        URL url = this.getClass().getProtectionDomain().getCodeSource().getLocation();
-        String urlPath = url.getFile();
-        urlPath = urlPath.replace("!/BOOT-INF/classes!/", "");
-        urlPath = urlPath.replace("file:", "");
-        if (libs == null
+                                    Set<String> agentDependencyLibs) throws IOException {
+        String urlPath = getMainJarFilePath();
+        if (urlPath == null) {
+            return;
+        }
+        if (agentDependencyLibs == null
             || tarOutputStream == null
             || StringUtils.isEmpty(libPath)) {
             return;
         }
         JarFile jarFile = new JarFile(urlPath);
-        Enumeration<JarEntry> entries = jarFile.entries();
-        while (entries.hasMoreElements()) {
-            JarEntry jarEntry = entries.nextElement();
-            String jarPath = jarEntry.getName();
-            if (jarEntry.isDirectory() || !jarPath.startsWith("BOOT-INF/lib") || !containsJar(jarPath, libs)) {
+        String jarEntryPrefix = "BOOT-INF/lib/";
+        for (String eachDependencyLib : agentDependencyLibs) {
+            String eachEntryPath = jarEntryPrefix + eachDependencyLib;
+            JarEntry jarEntry = jarFile.getJarEntry(eachEntryPath);
+            if (jarEntry == null) {
+                LOGGER.error("The {} didn't found when package agent.", eachDependencyLib);
                 continue;
             }
             try (InputStream resource = jarFile.getInputStream(jarEntry)) {
-                addInputStreamToTar(tarOutputStream, resource, libPath + new File(jarPath).getName(),
+                addInputStreamToTar(tarOutputStream, resource, Paths.get(libPath, eachDependencyLib).toString(),
                     jarEntry.getSize(), TarArchiveEntry.DEFAULT_FILE_MODE);
             }
         }
@@ -383,18 +413,6 @@ public class AgentPackageService {
             sb.append(new String(cache, 0, length, StandardCharsets.UTF_8));
         }
         return sb.toString().getBytes(StandardCharsets.UTF_8);
-    }
-
-    private boolean containsJar(String fileUrlPath, Set<String> libs) {
-        if (libs == null || StringUtils.isEmpty(fileUrlPath)) {
-            return false;
-        }
-        for (String lib : libs) {
-            if (fileUrlPath.contains(lib)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private boolean fileProtocolPackage(String basePath,
@@ -454,25 +472,6 @@ public class AgentPackageService {
 
     private Set<String> getDependentLibs() {
         return new HashSet<>(agentLibs);
-    }
-
-    private Map<String, Object> getAgentConfigParam(String regionName, String controllerIP, int port, String
-        owner) {
-        Map<String, Object> confMap = newHashMap();
-        confMap.put("controllerIP", controllerIP);
-        confMap.put("controllerPort", String.valueOf(port));
-        if (StringUtils.isEmpty(regionName)) {
-            regionName = "NONE";
-        }
-        if (StringUtils.isNotBlank(owner)) {
-            if (StringUtils.isEmpty(regionName)) {
-                regionName = "owned_" + owner;
-            } else {
-                regionName = regionName + "_owned_" + owner;
-            }
-        }
-        confMap.put("controllerRegion", regionName);
-        return confMap;
     }
 
     /**
