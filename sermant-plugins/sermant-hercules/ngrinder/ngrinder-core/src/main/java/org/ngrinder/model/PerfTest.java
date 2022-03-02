@@ -240,6 +240,38 @@ public class PerfTest extends BaseModel<PerfTest> {
 	@Column(name = "mean_test_time")
 	private Double meanTestTime;
 
+    @Expose
+    @Column(name = "min_response_time")
+    private Double minResponseTime;
+
+    @Expose
+    @Column(name = "response_time_percent_25")
+    private Double responseTimePercent25;
+
+    @Expose
+    @Column(name = "response_time_percent_50")
+    private Double responseTimePercent50;
+
+    @Expose
+    @Column(name = "response_time_percent_75")
+    private Double responseTimePercent75;
+
+    @Expose
+    @Column(name = "response_time_percent_90")
+    private Double responseTimePercent90;
+
+    @Expose
+    @Column(name = "response_time_percent_95")
+    private Double responseTimePercent95;
+
+    @Expose
+    @Column(name = "response_time_percent_99")
+    private Double responseTimePercent99;
+
+    @Expose
+    @Column(name = "max_response_time")
+    private Double maxResponseTime;
+
 	@Expose
 	@Column(name = "test_time_standard_deviation")
 	private Double testTimeStandardDeviation;
@@ -383,8 +415,71 @@ public class PerfTest extends BaseModel<PerfTest> {
 		this.rampUpType = getSafe(this.rampUpType, RampUp.PROCESS);
 	}
 
+    public Double getMinResponseTime() {
+        return minResponseTime;
+    }
 
-	public String getTestIdentifier() {
+    public void setMinResponseTime(Double minResponseTime) {
+        this.minResponseTime = minResponseTime;
+    }
+
+    public Double getResponseTimePercent25() {
+        return responseTimePercent25;
+    }
+
+    public void setResponseTimePercent25(Double responseTimePercent25) {
+        this.responseTimePercent25 = responseTimePercent25;
+    }
+
+    public Double getResponseTimePercent50() {
+        return responseTimePercent50;
+    }
+
+    public void setResponseTimePercent50(Double responseTimePercent50) {
+        this.responseTimePercent50 = responseTimePercent50;
+    }
+
+    public Double getResponseTimePercent75() {
+        return responseTimePercent75;
+    }
+
+    public void setResponseTimePercent75(Double responseTimePercent75) {
+        this.responseTimePercent75 = responseTimePercent75;
+    }
+
+    public Double getResponseTimePercent90() {
+        return responseTimePercent90;
+    }
+
+    public void setResponseTimePercent90(Double responseTimePercent90) {
+        this.responseTimePercent90 = responseTimePercent90;
+    }
+
+    public Double getResponseTimePercent95() {
+        return responseTimePercent95;
+    }
+
+    public void setResponseTimePercent95(Double responseTimePercent95) {
+        this.responseTimePercent95 = responseTimePercent95;
+    }
+
+    public Double getResponseTimePercent99() {
+        return responseTimePercent99;
+    }
+
+    public void setResponseTimePercent99(Double responseTimePercent99) {
+        this.responseTimePercent99 = responseTimePercent99;
+    }
+
+    public Double getMaxResponseTime() {
+        return maxResponseTime;
+    }
+
+    public void setMaxResponseTime(Double maxResponseTime) {
+        this.maxResponseTime = maxResponseTime;
+    }
+
+    public String getTestIdentifier() {
 		return "perftest_" + getId() + "_" + (getLastModifiedUser() == null ? userId : getLastModifiedUser().getUserId());
 	}
 

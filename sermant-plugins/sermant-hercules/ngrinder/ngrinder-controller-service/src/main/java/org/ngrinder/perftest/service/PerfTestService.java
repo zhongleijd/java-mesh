@@ -1099,13 +1099,23 @@ public class PerfTestService extends AbstractPerfTestService implements Controll
         Map<String, Object> result = consoleManager.getConsoleUsingPort(perfTest.getPort()).getStatisticsData();
         @SuppressWarnings("unchecked")
         Map<String, Object> totalStatistics = MapUtils.getMap(result, "totalStatistics", MapUtils.EMPTY_MAP);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> customStatistics = MapUtils.getMap(result, "customStatistics", MapUtils.EMPTY_MAP);
         LOGGER.info("Total Statistics for test {}  is {}", perfTest.getId(), totalStatistics);
+        LOGGER.info("Custom Statistics for test {}  is {}", perfTest.getId(), customStatistics);
         perfTest.setTps(parseDoubleWithSafety(totalStatistics, "TPS", 0D));
         perfTest.setMeanTestTime(parseDoubleWithSafety(totalStatistics, "Mean_Test_Time_(ms)", 0D));
         perfTest.setPeakTps(parseDoubleWithSafety(totalStatistics, "Peak_TPS", 0D));
         perfTest.setTests(MapUtils.getDouble(totalStatistics, "Tests", 0D).longValue());
         perfTest.setErrors(MapUtils.getDouble(totalStatistics, "Errors", 0D).longValue());
-
+        perfTest.setMinResponseTime(parseDoubleWithSafety(customStatistics, "minResponseTime", 0D));
+        perfTest.setResponseTimePercent25(parseDoubleWithSafety(customStatistics, "responseTimePercent25", 0D));
+        perfTest.setResponseTimePercent50(parseDoubleWithSafety(customStatistics, "responseTimePercent50", 0D));
+        perfTest.setResponseTimePercent75(parseDoubleWithSafety(customStatistics, "responseTimePercent75", 0D));
+        perfTest.setResponseTimePercent90(parseDoubleWithSafety(customStatistics, "responseTimePercent90", 0D));
+        perfTest.setResponseTimePercent95(parseDoubleWithSafety(customStatistics, "responseTimePercent95", 0D));
+        perfTest.setResponseTimePercent99(parseDoubleWithSafety(customStatistics, "responseTimePercent99", 0D));
+        perfTest.setMaxResponseTime(parseDoubleWithSafety(customStatistics, "maxResponseTime", 0D));
     }
 
     /**
