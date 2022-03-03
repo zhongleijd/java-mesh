@@ -362,10 +362,10 @@ public class AgentPackageService {
         for (URL url : urls) {
             File eachClassPath = new File(url.getFile());
             if (!isJar(eachClassPath)) {
-                return;
+                continue;
             }
             if (!isAgentDependentLib(eachClassPath, libs)) {
-                return;
+                continue;
             }
             addFileToTar(tarOutputStream, eachClassPath, libPath + eachClassPath.getName());
         }
