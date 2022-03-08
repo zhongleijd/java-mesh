@@ -1,4 +1,4 @@
-<img src="docs/binary-docs/sermant-logo.png" width="30%" syt height="530%" />
+<img src="docs/binary-docs/sermant-logo.png" width="25%" syt height="25%" />
 
 ### A proxyless service mesh solution based on Javaagent
 
@@ -41,15 +41,9 @@ Execute *maven* command to package the **Sermant** project's [demo module](serma
 mvn clean package -Dmaven.test.skip -Pexample
 ```
 
-Execute *maven* command to package the **Sermant** project's [back-end module](sermant-backend).
-
-```shell
-mvn clean package -Dmaven.test.skip -Pbackend
-```
-
 ### Start Sermant
 
-Start **Sermant** backend, **Prepare zookeeper, kafka**.
+Start **Sermant** backend, **Prepare zookeeper**.
 
 ```shell
 # Run under Linux
@@ -76,13 +70,11 @@ java -cp sermant-plugins\sermant-example\demo-application\target\demo-applicatio
   -javaagent:sermant-agent-x.x.x\agent\sermant-agent.jar=appName=test ^
   com.huawei.example.demo.DemoApplication
 ```
-Check running status of Sermant
-```
-open http://localhost:8900 in browser
-```
+Check running status of Sermant. In this example, open the browser and navigate to the URL "http://localhost:8900".
+
 ![pic](docs/binary-docs/backend_sermant_info.png)
 
-#### Please refer to the  [Register Plugin QuickStart](docs/QuickStart.md) for details.
+#### Please refer to the  [Service Register & Discovery Plugin QuickStart](docs/QuickStart.md) for details.
 
 ## More documents to follow
 

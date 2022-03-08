@@ -16,6 +16,9 @@
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <servicecomb.version>2.5.3</servicecomb.version>
+        <dubbo.version>2.7.15</dubbo.version>
+        <alibaba.dubbo.version>2.6.12</alibaba.dubbo.version>
+        <guava.version>31.0.1-jre</guava.version>
         <package.plugin.type>service</package.plugin.type>
         <config.skip.flag>false</config.skip.flag>
     </properties>
@@ -41,13 +44,37 @@
                     <groupId>org.springframework</groupId>
                     <artifactId>spring-core</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-tcnative-boringssl-static</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>guava</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>com.huawei.sermant</groupId>
-            <artifactId>register-common</artifactId>
-            <version>${project.version}</version>
-            <scope>compile</scope>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.dubbo</groupId>
+            <artifactId>dubbo-config-api</artifactId>
+            <version>${dubbo.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>dubbo-config-api</artifactId>
+            <version>${alibaba.dubbo.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

@@ -25,6 +25,8 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -39,7 +41,7 @@ import java.util.logging.Logger;
 public class ReflectUtils {
     private static final Logger LOGGER = LogFactory.getLogger();
     private static final String SC_REGISTRY_ADDRESS =
-        Constant.SC_REGISTRY_PROTOCOL + Constant.PROTOCOL_SEPARATION + "127.0.0.1:30100";
+        Constant.SC_REGISTRY_PROTOCOL + Constant.PROTOCOL_SEPARATION + "localhost:30100";
     private static final String GET_PROTOCOL_METHOD_NAME = "getProtocol";
     private static final String GET_ADDRESS_METHOD_NAME = "getAddress";
     private static final String GET_PATH_METHOD_NAME = "getPath";
@@ -94,7 +96,7 @@ public class ReflectUtils {
         try {
             Constructor<T> constructor = clazz.getConstructor(String.class);
 
-            // 这个url不重要，重要的是protocol，所以设置成127.0.0.1:30100就行
+            // 这个url不重要，重要的是protocol，所以设置成localhost:30100就行
             return constructor.newInstance(SC_REGISTRY_ADDRESS);
         } catch (NoSuchMethodException | InstantiationException | IllegalAccessException
             | InvocationTargetException e) {
@@ -350,9 +352,7 @@ public class ReflectUtils {
         }
         if (hasParameter) {
             // 有参非公共方法
-            Method method = invokeClass.getDeclaredMethod(name, parameterClass);
-            method.setAccessible(true);
-            return method;
+            return setAccessible(invokeClass.getDeclaredMethod(name, parameterClass));
         }
         if (isPublic) {
             // 无参公共方法
@@ -360,8 +360,14 @@ public class ReflectUtils {
         }
 
         // 无参非公共方法
-        Method method = invokeClass.getDeclaredMethod(name);
-        method.setAccessible(true);
+        return setAccessible(invokeClass.getDeclaredMethod(name));
+    }
+
+    private static Method setAccessible(Method method) {
+        AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
+            method.setAccessible(true);
+            return null;
+        });
         return method;
     }
 
