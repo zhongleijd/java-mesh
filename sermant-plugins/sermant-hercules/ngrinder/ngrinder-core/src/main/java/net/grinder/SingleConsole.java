@@ -1229,9 +1229,13 @@ public class SingleConsole extends AbstractSingleConsole implements Listener, Sa
 
     public void addCustomStatistics() {
         double[] rtArray = ArrayUtils.toPrimitive(responseTimeList.toArray(new Double[]{}));
+        Map<String, Object> customStatistics = new HashMap<>();
+        if (rtArray == null || rtArray.length == 0) {
+            statisticData.put("customStatistics", customStatistics);
+            return;
+        }
         Arrays.sort(rtArray);
         Percentile percentile = new Percentile();
-        Map<String, Object> customStatistics = new HashMap<>();
         customStatistics.put("minResponseTime", rtArray[0]);
         customStatistics.put("responseTimePercent25", percentile.evaluate(rtArray, 25));
         customStatistics.put("responseTimePercent50", percentile.evaluate(rtArray, 50));
