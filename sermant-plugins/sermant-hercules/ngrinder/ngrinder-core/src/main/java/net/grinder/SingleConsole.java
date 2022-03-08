@@ -131,7 +131,7 @@ public class SingleConsole extends AbstractSingleConsole implements Listener, Sa
     private boolean capture = false;
     private File reportPath;
     private final List<Double> responseTimeList = new ArrayList<>();
-    private Map<String, Object> statisticData;
+    private Map<String, Object> statisticData = new HashMap<>();
     private boolean headerAdded = false;
     private GrinderProperties properties;
 
