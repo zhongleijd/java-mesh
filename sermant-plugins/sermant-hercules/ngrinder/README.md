@@ -272,7 +272,28 @@ cluster.region=Beijing
 > 这是集群中每一个controller独立配置，cluster.region是必须指定的，region用于区分controller已经
 > 每一个controller建立的压测任务和挂载的agent
 
-第四步：在配置好的各节点分别启动controller
+第四步：确定数据库需是mysql或者gaussdb，即NGRINDER_HOME中database.conf的配置确认
+```
+# H2 / cubrid / mysql / gaussdb can be set
+database.type=mysql
+
+# for cubrid. You should configure the following.
+# database.url=localhost:33000:ngrinder
+
+# for H2 remote connection, You should configure like followings.
+# You can see how to run the H2 DB server by yourself in http://www.h2database.com/html/tutorial.html#using_server
+# If this is not set, ngrinder will create the embedded DB.
+# Specify database url
+database.url=127.0.0.1:3306/hercules
+
+# if you want to use HA mode in cubrid, you should enable following
+database.url_option=useUnicode=true&characterEncoding=UTF-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=Asia/Shanghai
+
+# you should provide id / password who has a enough permission to create tables in the given db.
+database.username=root
+database.password=123456
+```
+第五步：在配置好的各节点分别启动controller
 ```
 java -jar ngrinder-controller-service-3.4.2.jar
 ```
