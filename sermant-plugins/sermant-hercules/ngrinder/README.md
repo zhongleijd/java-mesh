@@ -357,7 +357,7 @@ agent.controller_host=127.0.0.1
 # controller port for agent
 agent.controller_port=16001
 
-# agent region
+# agent region, 如果是单节点部署指定为NONE，如果是集群部署，需要指定为挂载的controller的region
 agent.region=NONE
 
 #agent.host_id=
