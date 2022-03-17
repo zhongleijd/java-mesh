@@ -27,8 +27,6 @@
   > 压测任务性能分析报告
 ## 插件使用方式
 ### 插件部署
-#### web端部署方法
-[hercules-adaptation 部署指导](../../../sermant-plugins/sermant-hercules/hercules-adaptation/README.md)
 #### server端部署方法
 [hercules-server 部署指导](../../../sermant-plugins/sermant-hercules/ngrinder/README.md)
 #### agent部署方法
