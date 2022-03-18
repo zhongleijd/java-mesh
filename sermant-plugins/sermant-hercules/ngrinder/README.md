@@ -59,6 +59,7 @@ export NGRINDER_EX_HOME=/ngrinder_ex_home
 > NGRINDER_HOME：controller配置主目录，集群部署时，需要使用共享文件系统处理，例如nfs共享目录来作为NGRINDER_HOME。 <br />
 > NGRINDER_EX_HOME：controller集群部署的时候，单节点独立配置和数据存放的目录，单节点部署时没有使用该目录。 <br />
 > 单节点不配置以上环境变量会默认在用户home目录下创建数据目录：~/.ngrinder和~/.ngrinder_ex。
+
 #### 3. 在NGRINDER_HOME中新增配置文件database.conf
 ```
 # H2 / cubrid / mysql / gaussdb can be set
@@ -97,6 +98,7 @@ https://github.com/huaweicloud/Sermant/tree/develop
 java -jar ngrinder-controller-service-3.4.2.jar
 ```
 > 启动命令未做多余配置，用户可根据自己需求添加适合部署服务器的参数。
+> 如果需要执行maven脚本，请加上-Dmaven.home=xxx参数。
 
 ##### 5.2 集群部署controller
 第一步：需要把NGRINDER_HOME配置为NFS共享目录中的路径。
@@ -298,6 +300,7 @@ database.password=123456
 java -jar ngrinder-controller-service-3.4.2.jar
 ```
 > 启动命令未做多余配置，用户可根据自己需求添加适合部署服务器的参数。
+> 如果需要执行maven脚本，请加上-Dmaven.home=xxx参数
 
 ### 五. 部署agent
 #### 1. 在上面项目启动之后，下载agent
