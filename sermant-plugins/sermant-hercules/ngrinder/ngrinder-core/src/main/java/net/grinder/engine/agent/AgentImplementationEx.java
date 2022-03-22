@@ -59,6 +59,7 @@ import org.ngrinder.infra.AgentConfig;
 import org.slf4j.Logger;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Properties;
 import java.util.Timer;
@@ -249,12 +250,6 @@ public class AgentImplementationEx implements Agent, AgentConstants {
                         final WorkerProcessCommandLine workerCommandLine = new WorkerProcessCommandLine(properties,
                             filterSystemClassPath(rebasedSystemProperty, handler, m_logger), jvmArguments,
                             script.getDirectory());
-
-                        // add third jars
-                        String extDirs = System.getProperty("java.ext.dirs");
-                        extDirs += File.pathSeparator;
-                        extDirs += Paths.get(m_fileStore.getDirectory().getFile().getCanonicalPath(), "lib").toString();
-                        workerCommandLine.getCommandList().add(3, "-Djava.ext.dirs=" + extDirs);
                         m_logger.info("Worker process command line: {}", workerCommandLine);
                         FileUtils.writeStringToFile(logFile, workerCommandLine.toString() + "\n\n");
                         workerFactory = new ProcessWorkerFactory(workerCommandLine, m_agentIdentity,
@@ -439,11 +434,37 @@ public class AgentImplementationEx implements Agent, AgentConstants {
         String property = properties.getProperty("java.class.path", "");
         logger.debug("Total system class path in total is " + property);
 
-        String newClassPath = handler.getClassPathProcessor().filterClassPath(property, logger);
+        StringBuilder newClassPath = new StringBuilder(handler.getClassPathProcessor().filterClassPath(property, logger));
+
+        // add script jars
+        addScriptLibToClassPath(logger, newClassPath);
         Properties returnProperties = new Properties(properties);
-        returnProperties.setProperty("java.class.path", newClassPath);
-        logger.debug("Filtered system class path is {}", newClassPath);
+        returnProperties.setProperty("java.class.path", newClassPath.toString());
+        logger.debug("Filtered system class path is {}", newClassPath.toString());
         return returnProperties;
+    }
+
+    private void addScriptLibToClassPath(Logger logger, StringBuilder newClassPath) {
+        try {
+            String scriptLibsPath = Paths.get(m_fileStore.getDirectory().getFile().getCanonicalPath(), "lib").toString();
+            File scriptLibs;
+            if (!StringUtils.isEmpty(scriptLibsPath) && (scriptLibs = new File(scriptLibsPath)).exists()) {
+                File[] files = scriptLibs.listFiles();
+                if (files == null || files.length == 0) {
+                    return;
+                }
+                for (File eachLib : files) {
+                    String libName = eachLib.getName();
+                    if (!libName.endsWith(".jar")) {
+                        continue;
+                    }
+                    newClassPath.append(File.pathSeparator);
+                    newClassPath.append(eachLib.getCanonicalPath());
+                }
+            }
+        } catch (IOException | CustomFileStore.FileStoreException exception) {
+            logger.error("Add script jars to classpath error.", exception);
+        }
     }
 
     public static final String GRINDER_PROP_TEST_ID = "grinder.test.id";
