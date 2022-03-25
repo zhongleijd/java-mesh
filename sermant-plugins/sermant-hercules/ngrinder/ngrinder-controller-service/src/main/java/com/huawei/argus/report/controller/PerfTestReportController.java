@@ -23,6 +23,9 @@ import com.huawei.argus.report.service.PerfTestReportService;
 import org.ngrinder.common.controller.BaseController;
 import org.ngrinder.model.PerfTestReport;
 import org.ngrinder.model.User;
+import org.ngrinder.perftest.service.report.SearchReportDataService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -38,17 +41,26 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Collections;
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import static org.ngrinder.common.util.ObjectUtils.defaultIfNull;
 
 @SuppressWarnings("SpringJavaAutowiringInspection")
 @Controller
-@RequestMapping("/perfreport")
+@RequestMapping("/rest/report")
 public class PerfTestReportController extends BaseController {
+    private static final Logger LOGGER = LoggerFactory.getLogger(PerfTestReportController.class);
+
     @Autowired
     private PerfTestReportService perfTestReportService;
 
+    @Autowired
+    private SearchReportDataService searchReportDataService;
 
     @RequestMapping(value = {"", "/"}, method = RequestMethod.GET)
     public @ResponseBody
@@ -89,5 +101,22 @@ public class PerfTestReportController extends BaseController {
         PerfTestReport thisPerfTestReport = perfTestReportService.getBasicReportByReportId(id);
         List<String> lstHosts = thisPerfTestReport.getTargetHostIP();
         return lstHosts.toArray(new String[lstHosts.size()]);
+    }
+
+    @RequestMapping(value = "/{id}", method = RequestMethod.GET)
+    @ResponseBody
+    public Map<String, Map<String, List<Map<String, String>>>> getReportDataByTime(
+        @PathVariable(value = "id") long id,
+        @RequestParam(name = "startTime") String startTimeString,
+        @RequestParam(name = "endTime") String endTimeString) {
+        SimpleDateFormat dateFormatEndWithSeconds = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        try {
+            Date startDateTime = dateFormatEndWithSeconds.parse(startTimeString);
+            Date endDateTime = dateFormatEndWithSeconds.parse(endTimeString);
+            return searchReportDataService.getReportDataDetail(id, startDateTime, endDateTime);
+        } catch (ParseException e) {
+            LOGGER.error("Invalid time format was found: startTime:{}, endTime:{}", startTimeString, endTimeString);
+            return Collections.emptyMap();
+        }
     }
 }
