@@ -76,6 +76,7 @@ public class CommonCounter extends Counter {
         int runNumber = 0;
         int nextNumber;
         while ((nextNumber = nextValue(runNumber)) <= config.getMaxValue()) {
+            LOGGER.debug("Add number {} to cache.", nextNumber);
             cacheNumber.add(nextNumber);
             runNumber++;
         }
@@ -97,12 +98,16 @@ public class CommonCounter extends Counter {
             throw new FunctionException("No matched number for this thread calculating by config.");
         }
         if (cursor < cacheNumber.size()) {
-            return String.format(Locale.ENGLISH, numberFormat, cacheNumber.get(cursor++));
+            String formatValue = String.format(Locale.ENGLISH, numberFormat, cacheNumber.get(cursor++));
+            LOGGER.debug("Return counter value:{}", formatValue);
+            return formatValue;
         }
         if (counterConfig.resetEachIteration()) {
             // 走到这里说明当设置了重复取值的时候，重置游标，从第一个开始取值
             cursor = 0;
-            return String.format(Locale.ENGLISH, numberFormat, cacheNumber.get(cursor));
+            String formatValue = String.format(Locale.ENGLISH, numberFormat, cacheNumber.get(cursor));
+            LOGGER.debug("Start counter again, Return counter value:{}", formatValue);
+            return formatValue;
         }
         Integer maxValue = counterConfig.getMaxValue();
         LOGGER.error("Over max value:{}", maxValue);

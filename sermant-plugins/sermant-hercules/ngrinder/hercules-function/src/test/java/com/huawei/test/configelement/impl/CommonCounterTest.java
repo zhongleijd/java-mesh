@@ -219,6 +219,7 @@ public class CommonCounterTest {
         counter.initConfig(counterConfig);
         boolean hasNext = counter.hasNext();
         Assert.assertTrue(hasNext);
+        Assert.assertEquals("7", counter.nextNumber());
     }
 
     @Test
