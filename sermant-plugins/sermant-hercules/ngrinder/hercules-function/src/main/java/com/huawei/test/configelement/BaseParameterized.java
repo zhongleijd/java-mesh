@@ -186,6 +186,7 @@ public abstract class BaseParameterized extends ConfigElement<ParameterizedConfi
 
 		// 参数名称的个数和参数值的个数必须是一致的
 		if (parameterizedNames.size() != values.size()) {
+		    LOGGER.error("Not equal: names:{}, values:{}", parameterizedNames, values);
 			throw new FunctionException("The count of variable values didn't match the count of variable names.");
 		}
 		Map<String, String> nextValue = new HashMap<>();
@@ -228,9 +229,9 @@ public abstract class BaseParameterized extends ConfigElement<ParameterizedConfi
 			LOGGER.error("The parameterized file path is empty.");
 			return Collections.emptyList();
 		}
-		try (InputStream parameterizedResource = getClass().getResourceAsStream(parameterizedFilePath)) {
+        try (InputStream parameterizedResource = this.getClass().getClassLoader().getResourceAsStream(parameterizedFilePath)) {
 			if (parameterizedResource == null) {
-				LOGGER.error("Invalid parameterized file path.");
+				LOGGER.error("Invalid parameterized file path, path={}.", parameterizedFilePath);
 				return Collections.emptyList();
 			}
 			try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(parameterizedResource, StandardCharsets.UTF_8))) {
