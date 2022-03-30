@@ -29,376 +29,364 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 public class CommonCounterTest {
-	@Before
-	public void init() {
-		InternalScriptContext internalScriptContext = Mockito.mock(InternalScriptContext.class);
-		GrinderProperties grinderProperties = new GrinderProperties();
-		grinderProperties.put("grinder.agents", 2);
-		grinderProperties.put("grinder.processes", 2);
-		grinderProperties.put("grinder.threads", 2);
-		Mockito.when(internalScriptContext.getProperties()).thenReturn(grinderProperties);
-		Mockito.when(internalScriptContext.getAgentNumber()).thenReturn(1);
-		Mockito.when(internalScriptContext.getProcessNumber()).thenReturn(1);
-		Mockito.when(internalScriptContext.getThreadNumber()).thenReturn(1);
-		Mockito.when(internalScriptContext.getRunNumber()).thenReturn(3);
-		Grinder.grinder = internalScriptContext;
-	}
+    @Before
+    public void init() {
+        InternalScriptContext internalScriptContext = Mockito.mock(InternalScriptContext.class);
+        GrinderProperties grinderProperties = new GrinderProperties();
+        grinderProperties.put("grinder.agents", 2);
+        grinderProperties.put("grinder.processes", 2);
+        grinderProperties.put("grinder.threads", 2);
+        Mockito.when(internalScriptContext.getProperties()).thenReturn(grinderProperties);
+        Mockito.when(internalScriptContext.getAgentNumber()).thenReturn(1);
+        Mockito.when(internalScriptContext.getProcessNumber()).thenReturn(1);
+        Mockito.when(internalScriptContext.getThreadNumber()).thenReturn(1);
+        Mockito.when(internalScriptContext.getRunNumber()).thenReturn(3);
+        Grinder.grinder = internalScriptContext;
+    }
 
-	@Test
-	public void test_isConfigValid_when_config_is_null() {
-		Counter counter = new CommonCounter();
-		counter.initConfig(null);
-		boolean configValid = counter.isConfigValid();
-		Assert.assertFalse(configValid);
-	}
+    @Test
+    public void test_isConfigValid_when_config_is_null() {
+        Counter counter = new CommonCounter();
+        counter.initConfig(null);
+        boolean configValid = counter.isConfigValid();
+        Assert.assertFalse(configValid);
+    }
 
-	@Test
-	public void test_isConfigValid_when_sharingMode_is_null() {
-		CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
-		CounterConfig counterConfig = counterConfigBuilder
-			.setSharingMode(null)
-			.setIncrement(1)
-			.setMaxValue(100)
-			.setStartValue(0)
-			.build();
-		Counter counter = new CommonCounter();
-		counter.initConfig(counterConfig);
-		boolean configValid = counter.isConfigValid();
-		Assert.assertFalse(configValid);
-	}
+    @Test
+    public void test_isConfigValid_when_sharingMode_is_null() {
+        CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
+        CounterConfig counterConfig = counterConfigBuilder
+            .setSharingMode(null)
+            .setIncrement(1)
+            .setMaxValue(100)
+            .setStartValue(0)
+            .build();
+        Counter counter = new CommonCounter();
+        counter.initConfig(counterConfig);
+        boolean configValid = counter.isConfigValid();
+        Assert.assertFalse(configValid);
+    }
 
-	@Test
-	public void test_isConfigValid_when_config_is_valid() {
-		CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
-		CounterConfig counterConfig = counterConfigBuilder
-			.setSharingMode(SharingMode.ALL_THREADS)
-			.setIncrement(1)
-			.setMaxValue(100)
-			.setStartValue(0)
-			.build();
-		Counter counter = new CommonCounter();
-		counter.initConfig(counterConfig);
-		boolean configValid = counter.isConfigValid();
-		Assert.assertTrue(configValid);
-	}
+    @Test
+    public void test_isConfigValid_when_config_is_valid() {
+        CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
+        CounterConfig counterConfig = counterConfigBuilder
+            .setSharingMode(SharingMode.ALL_THREADS)
+            .setIncrement(1)
+            .setMaxValue(100)
+            .setStartValue(0)
+            .build();
+        Counter counter = new CommonCounter();
+        counter.initConfig(counterConfig);
+        boolean configValid = counter.isConfigValid();
+        Assert.assertTrue(configValid);
+    }
 
-	@Test(expected = FunctionException.class)
-	public void test_nextNumber_when_config_is_null() {
-		Counter counter = new CommonCounter();
-		counter.initConfig(null);
-		String nextNumber = counter.nextNumber();
-		Assert.assertEquals("", nextNumber);
-	}
+    @Test(expected = FunctionException.class)
+    public void test_nextNumber_when_config_is_null() {
+        Counter counter = new CommonCounter();
+        counter.initConfig(null);
+        String nextNumber = counter.nextNumber();
+        Assert.assertEquals("", nextNumber);
+    }
 
-	@Test(expected = FunctionException.class)
-	public void test_nextNumber_when_sharingMode_is_null() {
-		CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
-		CounterConfig counterConfig = counterConfigBuilder
-			.setSharingMode(null)
-			.setIncrement(1)
-			.setMaxValue(100)
-			.setStartValue(0)
-			.build();
-		Counter counter = new CommonCounter();
-		counter.initConfig(counterConfig);
-		String nextNumber = counter.nextNumber();
-		Assert.assertEquals("", nextNumber);
-	}
+    @Test(expected = FunctionException.class)
+    public void test_nextNumber_when_sharingMode_is_null() {
+        CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
+        CounterConfig counterConfig = counterConfigBuilder
+            .setSharingMode(null)
+            .setIncrement(1)
+            .setMaxValue(100)
+            .setStartValue(0)
+            .build();
+        Counter counter = new CommonCounter();
+        counter.initConfig(counterConfig);
+        String nextNumber = counter.nextNumber();
+        Assert.assertEquals("", nextNumber);
+    }
 
-	@Test
-	public void test_nextNumber_when_has_maxValue_and_lt_than_maxValue() {
-		CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
-		CounterConfig counterConfig = counterConfigBuilder
-			.setSharingMode(SharingMode.ALL_THREADS)
-			.setIncrement(1)
-			.setMaxValue(100)
-			.setStartValue(0)
-			.build();
-		Counter counter = new CommonCounter();
-		counter.initConfig(counterConfig);
-		String nextNumber = counter.nextNumber();
-		Assert.assertEquals("31", nextNumber);
-	}
+    @Test
+    public void test_nextNumber_when_has_maxValue_and_lt_than_maxValue() {
+        CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
+        CounterConfig counterConfig = counterConfigBuilder
+            .setSharingMode(SharingMode.ALL_THREADS)
+            .setIncrement(1)
+            .setMaxValue(100)
+            .setStartValue(0)
+            .build();
+        Counter counter = new CommonCounter();
+        counter.initConfig(counterConfig);
+        String nextNumber = "0";
+        for (int i = 0; i <= 3; i++) {
+            nextNumber = counter.nextNumber();
+        }
+        Assert.assertEquals("31", nextNumber);
+    }
 
-	@Test(expected = FunctionException.class)
-	public void test_nextNumber_when_has_maxValue_and_gt_than_maxValue() {
-		CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
-		CounterConfig counterConfig = counterConfigBuilder
-			.setSharingMode(SharingMode.ALL_THREADS)
-			.setIncrement(1)
-			.setMaxValue(2)
-			.setStartValue(0)
-			.build();
-		Counter counter = new CommonCounter();
-		counter.initConfig(counterConfig);
-		String nextNumber = counter.nextNumber();
-		Assert.assertEquals("31", nextNumber);
-	}
+    @Test(expected = FunctionException.class)
+    public void test_nextNumber_when_has_maxValue_and_gt_than_maxValue() {
+        CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
+        CounterConfig counterConfig = counterConfigBuilder
+            .setSharingMode(SharingMode.ALL_THREADS)
+            .setIncrement(1)
+            .setMaxValue(2)
+            .setStartValue(0)
+            .build();
+        Counter counter = new CommonCounter();
+        counter.initConfig(counterConfig);
+        String nextNumber = counter.nextNumber();
+        Assert.assertEquals("31", nextNumber);
+    }
 
-	@Test
-	public void test_nextNumber_when_has_maxValue_and_eq_maxValue() {
-		CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
-		CounterConfig counterConfig = counterConfigBuilder
-			.setSharingMode(SharingMode.ALL_THREADS)
-			.setIncrement(1)
-			.setMaxValue(31)
-			.setStartValue(0)
-			.build();
-		Counter counter = new CommonCounter();
-		counter.initConfig(counterConfig);
-		String nextNumber = counter.nextNumber();
-		Assert.assertEquals("31", nextNumber);
-	}
+    @Test
+    public void test_nextNumber_when_has_maxValue_and_eq_maxValue() {
+        CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
+        CounterConfig counterConfig = counterConfigBuilder
+            .setSharingMode(SharingMode.ALL_THREADS)
+            .setIncrement(1)
+            .setMaxValue(31)
+            .setStartValue(0)
+            .build();
+        Counter counter = new CommonCounter();
+        counter.initConfig(counterConfig);
+        String nextNumber = "0";
+        for (int i = 0; i <= 3; i++) {
+            nextNumber = counter.nextNumber();
+        }
+        Assert.assertEquals("31", nextNumber);
+    }
 
-	@Test
-	public void test_nextNumber_when_has_numberFormat() {
-		CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
-		CounterConfig counterConfig = counterConfigBuilder
-			.setSharingMode(SharingMode.ALL_THREADS)
-			.setIncrement(1)
-			.setMaxValue(31)
-			.setStartValue(0)
-			.setNumberFormat("%d$")
-			.build();
-		Counter counter = new CommonCounter();
-		counter.initConfig(counterConfig);
-		String nextNumber = counter.nextNumber();
-		Assert.assertEquals("31$", nextNumber);
-	}
+    @Test
+    public void test_nextNumber_when_has_numberFormat() {
+        CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
+        CounterConfig counterConfig = counterConfigBuilder
+            .setSharingMode(SharingMode.ALL_THREADS)
+            .setIncrement(1)
+            .setMaxValue(31)
+            .setStartValue(0)
+            .setNumberFormat("%d$")
+            .setResetEachIteration(true)
+            .build();
+        Counter counter = new CommonCounter();
+        counter.initConfig(counterConfig);
+        String nextNumber = "0";
+        for (int i = 0; i <= 3; i++) {
+            nextNumber = counter.nextNumber();
+        }
+        Assert.assertEquals("31$", nextNumber);
+    }
 
-	@Test
-	public void test_hasNext_when_config_is_null() {
-		Counter counter = new CommonCounter();
-		counter.initConfig(null);
-		boolean hasNext = counter.hasNext();
-		Assert.assertFalse(hasNext);
-	}
+    @Test
+    public void test_hasNext_when_has_maxValue_and_lt_than_maxValue() {
+        CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
+        CounterConfig counterConfig = counterConfigBuilder
+            .setSharingMode(SharingMode.ALL_THREADS)
+            .setIncrement(1)
+            .setMaxValue(100)
+            .setStartValue(0)
+            .build();
+        Counter counter = new CommonCounter();
+        counter.initConfig(counterConfig);
+        boolean hasNext = counter.hasNext();
+        Assert.assertTrue(hasNext);
+    }
 
-	@Test
-	public void test_hasNext_when_sharingMode_is_null() {
-		CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
-		CounterConfig counterConfig = counterConfigBuilder
-			.setSharingMode(null)
-			.setIncrement(1)
-			.setMaxValue(100)
-			.setStartValue(0)
-			.build();
-		Counter counter = new CommonCounter();
-		counter.initConfig(counterConfig);
-		boolean hasNext = counter.hasNext();
-		Assert.assertFalse(hasNext);
-	}
+    @Test
+    public void test_hasNext_when_has_maxValue_and_gt_than_maxValue() {
+        CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
+        CounterConfig counterConfig = counterConfigBuilder
+            .setSharingMode(SharingMode.ALL_THREADS)
+            .setIncrement(1)
+            .setMaxValue(2)
+            .setStartValue(0)
+            .build();
+        Counter counter = new CommonCounter();
+        counter.initConfig(counterConfig);
+        boolean hasNext = counter.hasNext();
+        Assert.assertFalse(hasNext);
+    }
 
-	@Test
-	public void test_hasNext_when_has_maxValue_and_lt_than_maxValue() {
-		CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
-		CounterConfig counterConfig = counterConfigBuilder
-			.setSharingMode(SharingMode.ALL_THREADS)
-			.setIncrement(1)
-			.setMaxValue(100)
-			.setStartValue(0)
-			.build();
-		Counter counter = new CommonCounter();
-		counter.initConfig(counterConfig);
-		boolean hasNext = counter.hasNext();
-		Assert.assertTrue(hasNext);
-	}
+    @Test
+    public void test_hasNext_when_has_maxValue_and_eq_maxValue() {
+        CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
+        CounterConfig counterConfig = counterConfigBuilder
+            .setSharingMode(SharingMode.ALL_THREADS)
+            .setIncrement(1)
+            .setMaxValue(31)
+            .setStartValue(0)
+            .build();
+        Counter counter = new CommonCounter();
+        counter.initConfig(counterConfig);
+        boolean hasNext = counter.hasNext();
+        Assert.assertTrue(hasNext);
+        Assert.assertEquals("7", counter.nextNumber());
+    }
 
-	@Test
-	public void test_hasNext_when_has_maxValue_and_gt_than_maxValue() {
-		CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
-		CounterConfig counterConfig = counterConfigBuilder
-			.setSharingMode(SharingMode.ALL_THREADS)
-			.setIncrement(1)
-			.setMaxValue(2)
-			.setStartValue(0)
-			.build();
-		Counter counter = new CommonCounter();
-		counter.initConfig(counterConfig);
-		boolean hasNext = counter.hasNext();
-		Assert.assertFalse(hasNext);
-	}
+    @Test
+    public void test_nextValue_when_all_thread_mode_when_increment_1() {
+        CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
+        CounterConfig counterConfig = counterConfigBuilder
+            .setSharingMode(SharingMode.ALL_THREADS)
+            .setIncrement(1)
+            .setMaxValue(1000)
+            .setStartValue(0)
+            .build();
+        CommonCounter counter = new CommonCounter();
+        counter.initConfig(counterConfig);
+        Assert.assertEquals(31, counter.nextValue(3));
+    }
 
-	@Test
-	public void test_hasNext_when_has_maxValue_and_eq_maxValue() {
-		CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
-		CounterConfig counterConfig = counterConfigBuilder
-			.setSharingMode(SharingMode.ALL_THREADS)
-			.setIncrement(1)
-			.setMaxValue(31)
-			.setStartValue(0)
-			.build();
-		Counter counter = new CommonCounter();
-		counter.initConfig(counterConfig);
-		boolean hasNext = counter.hasNext();
-		Assert.assertTrue(hasNext);
-	}
+    @Test
+    public void test_nextValue_when_agent_mode_when_increment_1() {
+        CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
+        CounterConfig counterConfig = counterConfigBuilder
+            .setSharingMode(SharingMode.CURRENT_AGENT)
+            .setIncrement(1)
+            .setMaxValue(1000)
+            .setStartValue(0)
+            .build();
+        CommonCounter counter = new CommonCounter();
+        counter.initConfig(counterConfig);
+        Assert.assertEquals(15, counter.nextValue(3));
+    }
 
-	@Test
-	public void test_nextValue_when_all_thread_mode_when_increment_1() {
-		CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
-		CounterConfig counterConfig = counterConfigBuilder
-			.setSharingMode(SharingMode.ALL_THREADS)
-			.setIncrement(1)
-			.setMaxValue(1000)
-			.setStartValue(0)
-			.build();
-		CommonCounter counter = new CommonCounter();
-		counter.initConfig(counterConfig);
-		Assert.assertEquals(31, counter.nextValue());
-	}
+    @Test
+    public void test_nextValue_when_process_mode_when_increment_1() {
+        CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
+        CounterConfig counterConfig = counterConfigBuilder
+            .setSharingMode(SharingMode.CURRENT_PROCESS)
+            .setIncrement(1)
+            .setMaxValue(1000)
+            .setStartValue(0)
+            .build();
+        CommonCounter counter = new CommonCounter();
+        counter.initConfig(counterConfig);
+        Assert.assertEquals(7, counter.nextValue(3));
+    }
 
-	@Test
-	public void test_nextValue_when_agent_mode_when_increment_1() {
-		CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
-		CounterConfig counterConfig = counterConfigBuilder
-			.setSharingMode(SharingMode.CURRENT_AGENT)
-			.setIncrement(1)
-			.setMaxValue(1000)
-			.setStartValue(0)
-			.build();
-		CommonCounter counter = new CommonCounter();
-		counter.initConfig(counterConfig);
-		Assert.assertEquals(15, counter.nextValue());
-	}
+    @Test
+    public void test_nextValue_when_current_thread_mode_when_increment_1() {
+        CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
+        CounterConfig counterConfig = counterConfigBuilder
+            .setSharingMode(SharingMode.CURRENT_THREAD)
+            .setIncrement(1)
+            .setMaxValue(1000)
+            .setStartValue(0)
+            .build();
+        CommonCounter counter = new CommonCounter();
+        counter.initConfig(counterConfig);
+        Assert.assertEquals(3, counter.nextValue(3));
+    }
 
-	@Test
-	public void test_nextValue_when_process_mode_when_increment_1() {
-		CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
-		CounterConfig counterConfig = counterConfigBuilder
-			.setSharingMode(SharingMode.CURRENT_PROCESS)
-			.setIncrement(1)
-			.setMaxValue(1000)
-			.setStartValue(0)
-			.build();
-		CommonCounter counter = new CommonCounter();
-		counter.initConfig(counterConfig);
-		Assert.assertEquals(7, counter.nextValue());
-	}
+    @Test
+    public void test_nextValue_when_all_thread_mode_when_increment_3() {
+        CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
+        CounterConfig counterConfig = counterConfigBuilder
+            .setSharingMode(SharingMode.ALL_THREADS)
+            .setIncrement(3)
+            .setMaxValue(1000)
+            .setStartValue(0)
+            .build();
+        CommonCounter counter = new CommonCounter();
+        counter.initConfig(counterConfig);
+        Assert.assertEquals(93, counter.nextValue(3));
+    }
 
-	@Test
-	public void test_nextValue_when_current_thread_mode_when_increment_1() {
-		CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
-		CounterConfig counterConfig = counterConfigBuilder
-			.setSharingMode(SharingMode.CURRENT_THREAD)
-			.setIncrement(1)
-			.setMaxValue(1000)
-			.setStartValue(0)
-			.build();
-		CommonCounter counter = new CommonCounter();
-		counter.initConfig(counterConfig);
-		Assert.assertEquals(3, counter.nextValue());
-	}
+    @Test
+    public void test_nextValue_when_agent_mode_when_increment_3() {
+        CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
+        CounterConfig counterConfig = counterConfigBuilder
+            .setSharingMode(SharingMode.CURRENT_AGENT)
+            .setIncrement(3)
+            .setMaxValue(1000)
+            .setStartValue(0)
+            .build();
+        CommonCounter counter = new CommonCounter();
+        counter.initConfig(counterConfig);
+        Assert.assertEquals(45, counter.nextValue(3));
+    }
 
-	@Test
-	public void test_nextValue_when_all_thread_mode_when_increment_3() {
-		CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
-		CounterConfig counterConfig = counterConfigBuilder
-			.setSharingMode(SharingMode.ALL_THREADS)
-			.setIncrement(3)
-			.setMaxValue(1000)
-			.setStartValue(0)
-			.build();
-		CommonCounter counter = new CommonCounter();
-		counter.initConfig(counterConfig);
-		Assert.assertEquals(93, counter.nextValue());
-	}
+    @Test
+    public void test_nextValue_when_process_mode_when_increment_3() {
+        CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
+        CounterConfig counterConfig = counterConfigBuilder
+            .setSharingMode(SharingMode.CURRENT_PROCESS)
+            .setIncrement(3)
+            .setMaxValue(1000)
+            .setStartValue(0)
+            .build();
+        CommonCounter counter = new CommonCounter();
+        counter.initConfig(counterConfig);
+        Assert.assertEquals(21, counter.nextValue(3));
+    }
 
-	@Test
-	public void test_nextValue_when_agent_mode_when_increment_3() {
-		CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
-		CounterConfig counterConfig = counterConfigBuilder
-			.setSharingMode(SharingMode.CURRENT_AGENT)
-			.setIncrement(3)
-			.setMaxValue(1000)
-			.setStartValue(0)
-			.build();
-		CommonCounter counter = new CommonCounter();
-		counter.initConfig(counterConfig);
-		Assert.assertEquals(45, counter.nextValue());
-	}
+    @Test
+    public void test_nextValue_when_current_thread_mode_when_increment_3() {
+        CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
+        CounterConfig counterConfig = counterConfigBuilder
+            .setSharingMode(SharingMode.CURRENT_THREAD)
+            .setIncrement(3)
+            .setMaxValue(1000)
+            .setStartValue(0)
+            .build();
+        CommonCounter counter = new CommonCounter();
+        counter.initConfig(counterConfig);
+        Assert.assertEquals(9, counter.nextValue(3));
+    }
 
-	@Test
-	public void test_nextValue_when_process_mode_when_increment_3() {
-		CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
-		CounterConfig counterConfig = counterConfigBuilder
-			.setSharingMode(SharingMode.CURRENT_PROCESS)
-			.setIncrement(3)
-			.setMaxValue(1000)
-			.setStartValue(0)
-			.build();
-		CommonCounter counter = new CommonCounter();
-		counter.initConfig(counterConfig);
-		Assert.assertEquals(21, counter.nextValue());
-	}
+    @Test
+    public void test_nextValue_when_all_thread_mode_and_increment_3_and_start_from_10() {
+        CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
+        CounterConfig counterConfig = counterConfigBuilder
+            .setSharingMode(SharingMode.ALL_THREADS)
+            .setIncrement(3)
+            .setMaxValue(1000)
+            .setStartValue(10)
+            .build();
+        CommonCounter counter = new CommonCounter();
+        counter.initConfig(counterConfig);
+        Assert.assertEquals(103, counter.nextValue(3));
+    }
 
-	@Test
-	public void test_nextValue_when_current_thread_mode_when_increment_3() {
-		CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
-		CounterConfig counterConfig = counterConfigBuilder
-			.setSharingMode(SharingMode.CURRENT_THREAD)
-			.setIncrement(3)
-			.setMaxValue(1000)
-			.setStartValue(0)
-			.build();
-		CommonCounter counter = new CommonCounter();
-		counter.initConfig(counterConfig);
-		Assert.assertEquals(9, counter.nextValue());
-	}
+    @Test
+    public void test_nextValue_when_agent_mode_and_increment_3_and_start_from_10() {
+        CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
+        CounterConfig counterConfig = counterConfigBuilder
+            .setSharingMode(SharingMode.CURRENT_AGENT)
+            .setIncrement(3)
+            .setMaxValue(1000)
+            .setStartValue(10)
+            .build();
+        CommonCounter counter = new CommonCounter();
+        counter.initConfig(counterConfig);
+        Assert.assertEquals(55, counter.nextValue(3));
+    }
 
-	@Test
-	public void test_nextValue_when_all_thread_mode_and_increment_3_and_start_from_10() {
-		CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
-		CounterConfig counterConfig = counterConfigBuilder
-			.setSharingMode(SharingMode.ALL_THREADS)
-			.setIncrement(3)
-			.setMaxValue(1000)
-			.setStartValue(10)
-			.build();
-		CommonCounter counter = new CommonCounter();
-		counter.initConfig(counterConfig);
-		Assert.assertEquals(103, counter.nextValue());
-	}
+    @Test
+    public void test_nextValue_when_process_mode_and_increment_3_and_start_from_10() {
+        CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
+        CounterConfig counterConfig = counterConfigBuilder
+            .setSharingMode(SharingMode.CURRENT_PROCESS)
+            .setIncrement(3)
+            .setMaxValue(1000)
+            .setStartValue(10)
+            .build();
+        CommonCounter counter = new CommonCounter();
+        counter.initConfig(counterConfig);
+        Assert.assertEquals(31, counter.nextValue(3));
+    }
 
-	@Test
-	public void test_nextValue_when_agent_mode_and_increment_3_and_start_from_10() {
-		CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
-		CounterConfig counterConfig = counterConfigBuilder
-			.setSharingMode(SharingMode.CURRENT_AGENT)
-			.setIncrement(3)
-			.setMaxValue(1000)
-			.setStartValue(10)
-			.build();
-		CommonCounter counter = new CommonCounter();
-		counter.initConfig(counterConfig);
-		Assert.assertEquals(55, counter.nextValue());
-	}
-
-	@Test
-	public void test_nextValue_when_process_mode_and_increment_3_and_start_from_10() {
-		CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
-		CounterConfig counterConfig = counterConfigBuilder
-			.setSharingMode(SharingMode.CURRENT_PROCESS)
-			.setIncrement(3)
-			.setMaxValue(1000)
-			.setStartValue(10)
-			.build();
-		CommonCounter counter = new CommonCounter();
-		counter.initConfig(counterConfig);
-		Assert.assertEquals(31, counter.nextValue());
-	}
-
-	@Test
-	public void test_nextValue_when_current_thread_mode_and_increment_3_and_start_from_10() {
-		CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
-		CounterConfig counterConfig = counterConfigBuilder
-			.setSharingMode(SharingMode.CURRENT_THREAD)
-			.setIncrement(3)
-			.setMaxValue(1000)
-			.setStartValue(10)
-			.build();
-		CommonCounter counter = new CommonCounter();
-		counter.initConfig(counterConfig);
-		Assert.assertEquals(19, counter.nextValue());
-	}
+    @Test
+    public void test_nextValue_when_current_thread_mode_and_increment_3_and_start_from_10() {
+        CounterConfig.Builder counterConfigBuilder = new CounterConfig.Builder();
+        CounterConfig counterConfig = counterConfigBuilder
+            .setSharingMode(SharingMode.CURRENT_THREAD)
+            .setIncrement(3)
+            .setMaxValue(1000)
+            .setStartValue(10)
+            .build();
+        CommonCounter counter = new CommonCounter();
+        counter.initConfig(counterConfig);
+        Assert.assertEquals(19, counter.nextValue(3));
+    }
 }
