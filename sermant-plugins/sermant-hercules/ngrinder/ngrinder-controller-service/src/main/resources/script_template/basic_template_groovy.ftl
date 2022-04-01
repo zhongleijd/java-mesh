@@ -52,10 +52,8 @@ HTTPPluginControl.getConnectionDefaults().timeout = 6000
 test = new GTest(1, "${name}")
 request = new HTTPRequest()
 <#if headers?? && headers?size != 0>
-// Set header datas
-List
-<NVPair> headerList = new ArrayList
-    <NVPair>()
+    // Set header datas
+List<NVPair> headerList = new ArrayList<NVPair>()
         <#list headers as header>
             headerList.add(new NVPair("${header["name"]?j_string}", "${header["value"]?j_string?replace("$", "\\$")}"))
         </#list>
@@ -63,9 +61,7 @@ List
         </#if>
         <#if params?? && params?size != 0>
         // Set param datas
-        List
-        <NVPair> paramList = new ArrayList
-            <NVPair>()
+        List<NVPair> paramList = new ArrayList<NVPair>()
                 <#list params as param>
                     paramList.add(new NVPair("${param["name"]?j_string}", "${param["value"]?j_string?replace("$", "\\$")}"))
                 </#list>
@@ -73,9 +69,7 @@ List
                 </#if>
                 <#if cookies?? && cookies?size != 0>
                 // Set cookie datas
-                List
-                <Cookie> cookieList = new ArrayList
-                    <Cookie>()
+                List<Cookie> cookieList = new ArrayList<Cookie>()
                         <#list cookies as cookie>
                             cookieList.add(new Cookie("${cookie["name"]?j_string}", "${cookie["value"]?j_string?replace("$", "\\$")}", "${cookie["domain"]?j_string}", "${cookie["path"]?j_string}", new Date(32503647599000L), false))
                         </#list>
@@ -100,8 +94,7 @@ List
 
                         @Test
                         public void test(){
-                        HTTPResponse result = request.${method?default("GET")}("${url}
-                        ", <#if body??>body.getBytes()<#else>params</#if>)
+                        HTTPResponse result = request.${method?default("GET")}("${url}", <#if body??>body.getBytes()<#else>params</#if>)
 
                         if (result.statusCode == 301 || result.statusCode == 302) {
                         grinder.logger.warn("Warning. The response may not be correct. The response code was {}.",
