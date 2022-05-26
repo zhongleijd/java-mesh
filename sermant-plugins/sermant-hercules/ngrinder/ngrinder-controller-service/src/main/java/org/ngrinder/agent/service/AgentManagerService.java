@@ -48,6 +48,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 
 import static org.ngrinder.common.util.CollectionUtils.newArrayList;
@@ -550,6 +551,15 @@ public class AgentManagerService extends AbstractAgentManagerService {
         updateAgent(agent.getAgentIdentity());
     }
 
+    @Override
+    public void updateConfig(Long id, Properties configProperties) {
+        AgentInfo agent = getOne(id, true);
+        if (agent == null) {
+            return;
+        }
+        agentManager.updateAgentConfig(agent.getAgentIdentity(), configProperties);
+    }
+
     /**
      * Update the agent
      *
@@ -558,7 +568,6 @@ public class AgentManagerService extends AbstractAgentManagerService {
     public void updateAgent(AgentIdentity agentIdentity) {
         agentManager.updateAgent(agentIdentity, shouldUpdateAgentAlways() ? "99.99" : config.getVersion());
     }
-
 
     protected boolean shouldUpdateAgentAlways() {
         return config.getControllerProperties().getPropertyBoolean(ControllerConstants.PROP_CONTROLLER_AGENT_FORCE_UPDATE);

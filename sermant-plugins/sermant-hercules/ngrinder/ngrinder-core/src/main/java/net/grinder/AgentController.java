@@ -1,4 +1,4 @@
-/* 
+/*
  * Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
@@ -9,7 +9,7 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
- * limitations under the License. 
+ * limitations under the License.
  */
 package net.grinder;
 
@@ -19,6 +19,7 @@ import net.grinder.common.GrinderProperties;
 import net.grinder.communication.*;
 import net.grinder.engine.agent.Agent;
 import net.grinder.engine.common.AgentControllerConnectorFactory;
+import net.grinder.engine.communication.AgentConfigGrinderMessage;
 import net.grinder.engine.communication.AgentControllerServerListener;
 import net.grinder.engine.communication.AgentDownloadGrinderMessage;
 import net.grinder.engine.communication.AgentUpdateGrinderMessage;
@@ -46,6 +47,7 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.Map.Entry;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -252,7 +254,15 @@ public class AgentController implements Agent, AgentConstants {
 						m_state = AgentControllerState.READY;
 					}
 
-				} else {
+				} else if (m_agentControllerServerListener.received(AgentControllerServerListener.AGENT_CONFIG_UPDATE)) {
+                    final AgentConfigGrinderMessage lastAgentConfigGrinderMessage = m_agentControllerServerListener.getLastAgentConfigGrinderMessage();
+                    for (Entry<Object, Object> configEntry : lastAgentConfigGrinderMessage.getConfigProperties()
+                        .entrySet()) {
+                        LOGGER.info("set key = {}, value = {}.", configEntry.getKey(), configEntry.getValue());
+                        agentConfig.getAgentProperties().addProperty(configEntry.getKey().toString(),
+                            configEntry.getValue().toString());
+                    }
+                } else {
 					// ConsoleListener.RESET or natural death.
 					startMessage = null;
 				}

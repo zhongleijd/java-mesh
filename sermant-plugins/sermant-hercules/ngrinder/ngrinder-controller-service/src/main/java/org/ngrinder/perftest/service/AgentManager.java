@@ -20,8 +20,10 @@ import net.grinder.common.GrinderProperties;
 import net.grinder.common.processidentity.AgentIdentity;
 import net.grinder.console.communication.AgentDownloadRequestListener;
 import net.grinder.console.communication.AgentProcessControlImplementation.AgentStatus;
+import net.grinder.console.communication.ConsoleCommunicationImplementationEx;
 import net.grinder.console.communication.LogArrivedListener;
 import net.grinder.console.model.ConsoleCommunicationSetting;
+import net.grinder.engine.communication.AgentConfigGrinderMessage;
 import net.grinder.engine.communication.AgentUpdateGrinderMessage;
 import net.grinder.engine.controller.AgentControllerIdentityImplementation;
 import net.grinder.message.console.AgentControllerState;
@@ -55,6 +57,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
@@ -72,6 +75,10 @@ public class AgentManager implements ControllerConstants, AgentDownloadRequestLi
 	public static final Logger LOGGER = LoggerFactory.getLogger(AgentManager.class);
 	private AgentControllerServerDaemon agentControllerServerDaemon;
     private static final int NUMBER_OF_THREAD = 3;
+
+    public AgentControllerServerDaemon getAgentControllerServerDaemon() {
+        return agentControllerServerDaemon;
+    }
 
     @Autowired
     private Config config;
@@ -436,15 +443,15 @@ public class AgentManager implements ControllerConstants, AgentDownloadRequestLi
 		User user = perfTest.getCreatedUser();
 		final Set<AgentIdentity> allFreeAgents = getAllFreeApprovedAgentsForUser(user);
 		final Set<AgentIdentity> necessaryAgents = selectAgentByUser(user, allFreeAgents, agentCount,perfTest);
-		LOGGER.info("{} agents are starting for user {}", agentCount, user.getUserId());
+		LOGGER.info("{} agents are starting for user {}. perf_test {}", agentCount, user.getUserId(), perfTest.getId());
 		for (AgentIdentity each : necessaryAgents) {
-			LOGGER.info("- Agent {}", each.getName());
+			LOGGER.info("- Agent {}. perf_test {}", each.getName(), perfTest.getId());
 		}
 		ExecutorService execService = null;
 		try {
 			// Make the agents connect to console.
 			grinderProperties.setInt(GrinderProperties.CONSOLE_PORT, singleConsole.getConsolePort());
-			execService = ExecutorFactory.createThreadPool("agentStarter", NUMBER_OF_THREAD);
+			execService = ExecutorFactory.createThreadPool("agentStarter-" + perfTest.getId(), NUMBER_OF_THREAD);
 			for (final AgentIdentity eachAgentIdentity : necessaryAgents) {
 				execService.submit(new Runnable() {
 					@Override
@@ -548,6 +555,13 @@ public class AgentManager implements ControllerConstants, AgentDownloadRequestLi
 	public void updateAgent(AgentIdentity agentIdentity, String version) {
 		agentControllerServerDaemon.updateAgent(agentIdentity, version);
 	}
+
+    public void updateAgentConfig(AgentIdentity agentIdentity, Properties configProperties) {
+        final ConsoleCommunicationImplementationEx component = agentControllerServerDaemon.getComponent(ConsoleCommunicationImplementationEx.class);
+        final AgentAddress address = new AgentAddress(agentIdentity);
+        component.sendToAddressedAgents(address,
+            new AgentConfigGrinderMessage(configProperties, agentIdentity.getNumber()));
+    }
 
 	/**
 	 * Get the set of {@link AgentStatus} from agents belong to the given single console port.

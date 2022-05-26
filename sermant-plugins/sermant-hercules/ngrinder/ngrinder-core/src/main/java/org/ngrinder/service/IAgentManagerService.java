@@ -1,4 +1,4 @@
-/* 
+/*
  * Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
@@ -9,7 +9,7 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
- * limitations under the License. 
+ * limitations under the License.
  */
 package org.ngrinder.service;
 
@@ -22,6 +22,7 @@ import org.ngrinder.monitor.controller.model.SystemDataModel;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * Agent manager service interface which is used to retrieve the agent info
@@ -141,7 +142,14 @@ public interface IAgentManagerService {
 	 * @param id ids.
 	 */
 	public abstract void update(Long id) throws IOException;
-	
+
+    /**
+     * Update agent config
+     *
+     * @param id ids.
+     */
+    public abstract void updateConfig(Long id, Properties configProperties) throws IOException;
+
 	/**
 	 * Get Ready agent state count return
 	 *

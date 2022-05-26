@@ -72,14 +72,19 @@ public final class AgentControllerServerListener {
 	 */
 	public static final int AGENT_UPDATE = 1 << 4;
 
-
+    /**
+     * Constant that represents a agent update.
+     *
+     * @see #received
+     */
+    public static final int AGENT_CONFIG_UPDATE = 1 << 5;
 
 	/**
 	 * Constant that represent any message.
 	 *
 	 * @see #received
 	 */
-	public static final int ANY = START | RESET | STOP | SHUTDOWN | AGENT_UPDATE;
+	public static final int ANY = START | RESET | STOP | SHUTDOWN | AGENT_UPDATE | AGENT_CONFIG_UPDATE;
 
 	private final Condition m_notifyOnMessage;
 	private final Logger m_logger;
@@ -87,6 +92,7 @@ public final class AgentControllerServerListener {
 	private int m_lastMessagesReceived = 0;
 	private StartGrinderMessage m_lastStartGrinderMessage;
 	private AgentUpdateGrinderMessage m_lastAgentUpdateGrinderMessage;
+    private AgentConfigGrinderMessage m_lastAgentConfigGrinderMessage;
 
 	/**
 	 * Constructor.
@@ -209,6 +215,14 @@ public final class AgentControllerServerListener {
 				setReceived(AGENT_UPDATE);
 			}
 		});
+
+        messageDispatcher.set(AgentConfigGrinderMessage.class, new AbstractMessageHandler<AgentConfigGrinderMessage>() {
+            public void handle(AgentConfigGrinderMessage message) {
+                m_logger.info("Received a agent config update message.");
+                m_lastAgentConfigGrinderMessage = message;
+                setReceived(AGENT_CONFIG_UPDATE);
+            }
+        });
 	}
 
 	/**
@@ -242,4 +256,7 @@ public final class AgentControllerServerListener {
 		return m_lastAgentUpdateGrinderMessage;
 	}
 
+    public AgentConfigGrinderMessage getLastAgentConfigGrinderMessage() {
+        return m_lastAgentConfigGrinderMessage;
+    }
 }
