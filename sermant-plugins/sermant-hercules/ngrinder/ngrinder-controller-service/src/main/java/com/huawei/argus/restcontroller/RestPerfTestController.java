@@ -230,8 +230,7 @@ public class RestPerfTestController extends RestBaseController {
             LOGGER.error("Can not start test, because status isn't READY.");
             return returnError();
         }
-        perfTestRunnable.doStart(user, testId);
-        return returnSuccess();
+        return perfTestRunnable.doStart(user, testId) ? returnSuccess() : returnError();
     }
 
     @SuppressWarnings("ConstantConditions")

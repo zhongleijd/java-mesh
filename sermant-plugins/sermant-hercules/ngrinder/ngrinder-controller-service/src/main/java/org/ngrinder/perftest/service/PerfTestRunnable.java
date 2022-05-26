@@ -212,24 +212,31 @@ public class PerfTestRunnable implements ControllerConstants {
      * @param user   执行压测任务的用户
      * @param testId 压测任务id
      */
-    public void doStart(final User user, final long testId) {
+    public boolean doStart(final User user, final long testId) {
         // 如果是自动执行状态，该方法不给调用
         if (autoExecuteTest) {
             LOG.info("The test will be executed automatically, id = {}.", testId);
-            return;
+            return true;
         }
-        if (!isConditionMatch()) return;
+        if (!isConditionMatch()) {
+            LOG.error("The test can't match condition to start, id = {}.", testId);
+            return false;
+        }
 
         // Find out ready perf_test
         PerfTest runCandidate = getRunnablePerfTest(testId);
-        if (!isPerfTestValid(runCandidate)) return;
+        if (!isPerfTestValid(runCandidate)) {
+            LOG.error("The test have not enough resource to start, id = {}.", testId);
+            return false;
+        }
         if (user == null || !user.getUserId().equals(runCandidate.getCreatedUser().getUserId())) {
             LOG.error("The user didn't match the perf_test.");
-            return;
+            return false;
         }
         taskExecutor.execute(() -> {
             doTest(runCandidate);
         });
+        return true;
     }
 
     void doStart() {
