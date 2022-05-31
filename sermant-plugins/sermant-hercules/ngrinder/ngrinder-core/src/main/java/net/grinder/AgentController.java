@@ -262,6 +262,7 @@ public class AgentController implements Agent, AgentConstants {
                         agentConfig.getAgentProperties().addProperty(configEntry.getKey().toString(),
                             configEntry.getValue().toString());
                     }
+                    startMessage = null;
                 } else {
 					// ConsoleListener.RESET or natural death.
 					startMessage = null;
