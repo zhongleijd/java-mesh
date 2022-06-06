@@ -255,6 +255,7 @@ public class AgentController implements Agent, AgentConstants {
 					}
 
 				} else if (m_agentControllerServerListener.received(AgentControllerServerListener.AGENT_CONFIG_UPDATE)) {
+                    startMessage = null;
                     final AgentConfigGrinderMessage lastAgentConfigGrinderMessage = m_agentControllerServerListener.getLastAgentConfigGrinderMessage();
                     for (Entry<Object, Object> configEntry : lastAgentConfigGrinderMessage.getConfigProperties()
                         .entrySet()) {
@@ -262,7 +263,6 @@ public class AgentController implements Agent, AgentConstants {
                         agentConfig.getAgentProperties().addProperty(configEntry.getKey().toString(),
                             configEntry.getValue().toString());
                     }
-                    startMessage = null;
                 } else {
 					// ConsoleListener.RESET or natural death.
 					startMessage = null;
