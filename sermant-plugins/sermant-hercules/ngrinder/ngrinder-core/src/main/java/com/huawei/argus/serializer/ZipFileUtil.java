@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.jar.JarOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -36,6 +37,58 @@ import java.util.zip.ZipOutputStream;
  * @since 2022-01-25
  */
 public class ZipFileUtil {
+
+    /**
+     * 添加指定文件到压缩文件里面
+     *
+     * @param jarFileName 压缩包名字
+     * @param needJarFile 需要压缩的文件所在的路径
+     * @throws IOException io异常
+     */
+    public static void jarFile(String jarFileName, File needJarFile) throws IOException {
+        if (needJarFile == null || !needJarFile.exists()) {
+            return;
+        }
+        try (FileOutputStream fileOutputStream = new FileOutputStream(jarFileName);
+            JarOutputStream jarOutputStream = new JarOutputStream(fileOutputStream)) {
+            doJar(jarOutputStream, needJarFile, "");
+        }
+    }
+
+    /**
+     * 实际执行把需要压缩文件的内容输出到jar压缩输出流中
+     *
+     * @param jarOutputStream 压缩包输出流
+     * @param file            需要被压缩的文件
+     * @param jarFilePath     压缩包中的路径
+     * @throws IOException io异常
+     */
+    private static void doJar(JarOutputStream jarOutputStream, File file, String jarFilePath) throws IOException {
+        if (file == null || !file.exists()) {
+            return;
+        }
+        String fileName = file.getName();
+        if (file.isDirectory()) {
+            File[] childFiles = file.listFiles();
+            if (childFiles == null || childFiles.length == 0) {
+                return;
+            }
+            Path basePath = Paths.get(jarFilePath, fileName, "/");
+            for (File childFile : childFiles) {
+                doJar(jarOutputStream, childFile, basePath.toString());
+            }
+            return;
+        }
+        try (FileInputStream fileInputStream = new FileInputStream(file)) {
+            int length;
+            byte[] cache = new byte[4096];
+            Path basePath = Paths.get(jarFilePath, fileName);
+            jarOutputStream.putNextEntry(new ZipEntry(basePath.toString()));
+            while ((length = fileInputStream.read(cache)) != -1) {
+                jarOutputStream.write(cache, 0, length);
+            }
+        }
+    }
 
     /**
      * 添加指定文件到压缩文件里面

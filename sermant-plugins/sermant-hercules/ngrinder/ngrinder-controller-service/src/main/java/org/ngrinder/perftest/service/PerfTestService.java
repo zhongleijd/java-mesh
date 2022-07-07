@@ -1000,7 +1000,7 @@ public class PerfTestService extends AbstractPerfTestService implements Controll
         String json = JSONObject.toJSONString(agentStatusMap);
         int statusLength = StringUtils.length(json);
         if (statusLength > 9950) { // max column size is 10,000
-            LOGGER.info("Agent status string length: {}, too long to save into table.", statusLength);
+            LOGGER.debug("Agent status string length: {}, too long to save into table.", statusLength);
             double ratio = 9900.0 / statusLength;
             int pickSize = (int) (agentStatusMap.size() * ratio);
             Map<String, SystemDataModel> pickAgentStateMap = Maps.newHashMap();

@@ -143,13 +143,6 @@ public interface IAgentManagerService {
 	 */
 	public abstract void update(Long id) throws IOException;
 
-    /**
-     * Update agent config
-     *
-     * @param id ids.
-     */
-    public abstract void updateConfig(Long id, Properties configProperties) throws IOException;
-
 	/**
 	 * Get Ready agent state count return
 	 *

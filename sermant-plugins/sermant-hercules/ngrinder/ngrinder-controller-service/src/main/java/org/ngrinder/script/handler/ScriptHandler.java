@@ -38,6 +38,7 @@ import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -54,6 +55,10 @@ import static org.ngrinder.common.util.ExceptionUtils.processException;
  * @since 3.2
  */
 public abstract class ScriptHandler implements ControllerConstants {
+    /**
+     * 所有脚本分发文件拓展器的集合
+     */
+    public static final List<ScriptDistributionExtension> SCRIPT_DISTRIBUTION_EXTENSIONS = new ArrayList<>();
     protected static final Logger LOGGER = LoggerFactory.getLogger(JythonScriptHandler.class);
     private final String codemirrorKey;
     private final String title;
@@ -149,6 +154,7 @@ public abstract class ScriptHandler implements ControllerConstants {
         if (scriptEntry.getRevision() != 0) {
             fileEntries.add(scriptEntry);
         }
+        fileEntries.addAll(getExtensionLibAndResourceEntries(distDir, testCaseId, user, scriptEntry));
         String basePath = getBasePath(scriptEntry);
         // Distribute each files in that folder.
         for (FileEntry each : fileEntries) {
@@ -261,6 +267,26 @@ public abstract class ScriptHandler implements ControllerConstants {
             }
         }
         return fileList;
+    }
+
+    /**
+     * 获取额外的lib和resource文件集合
+     *
+     * @param distDir 需要分发的目录
+     * @param testId  当前压测任务ID
+     * @param user 脚本用户
+     * @param scriptEntry 当前脚本路径
+     * @return 文件集合
+     * @throws IOException
+     */
+    public List<FileEntry> getExtensionLibAndResourceEntries(File distDir, Long testId, User user,
+        FileEntry scriptEntry) throws IOException {
+        List<FileEntry> allFileEntries = newArrayList();
+        for (ScriptDistributionExtension scriptDistributionExtension : SCRIPT_DISTRIBUTION_EXTENSIONS) {
+            allFileEntries.addAll(scriptDistributionExtension.extensionLibAndResources(this, distDir, testId, user,
+                scriptEntry));
+        }
+        return allFileEntries;
     }
 
     protected void prepareDefaultFile(File distDir, PropertiesWrapper properties) {

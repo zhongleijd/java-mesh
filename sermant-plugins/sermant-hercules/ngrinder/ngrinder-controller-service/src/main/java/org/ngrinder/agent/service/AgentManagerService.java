@@ -551,11 +551,10 @@ public class AgentManagerService extends AbstractAgentManagerService {
         updateAgent(agent.getAgentIdentity());
     }
 
-    @Override
     public void updateConfig(Long id, Properties configProperties) {
         AgentInfo agent = getOne(id, true);
-        if (agent == null) {
-            return;
+        if (agent == null || agent.getAgentIdentity() == null) {
+            throw new RuntimeException("请选择在线的agent");
         }
         agentManager.updateAgentConfig(agent.getAgentIdentity(), configProperties);
     }
